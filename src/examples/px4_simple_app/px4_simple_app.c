@@ -46,7 +46,7 @@
 #include <poll.h>
 #include <string.h>
 #include <math.h>
-
+//#include <lib/mathlib/mathlib.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/vehicle_attitude.h>
@@ -61,7 +61,8 @@ int px4_simple_app_main(int argc, char *argv[])
 	int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));
 	/* limit the update rate to 5 Hz */
 	orb_set_interval(sensor_sub_fd, 200);
-
+	//math::Quaternion q();
+	//math::Quaternion q(1,0,0,0);
 	/* advertise attitude topic */
 	struct vehicle_attitude_s att;
 	memset(&att, 0, sizeof(att));
