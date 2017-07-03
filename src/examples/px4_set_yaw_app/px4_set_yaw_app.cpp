@@ -61,5 +61,60 @@ int px4_set_yaw_app_main(int argc, char *argv[])
     orb_set_interval(sensor_sub_fd, 200);
     orb_set_interval(control_state_sub_fd, 200);
 
-    return OK;
+    /* one could wait for multiple topics with this technique, just using one here */
+    px4_pollfd_struct_t fds[] = {
+            { .fd = sensor_sub_fd,   .events = POLLIN },
+            { .fd = control_state_sub_fd,   .events = POLLIN }
+            /* there could be more file descriptors here, in the form like:
+             * { .fd = other_sub_fd,   .events = POLLIN },
+             */
+        };
+
+    int error_counter = 0;
+
+        for (int i = 0; i < 5; i++) {
+            /* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
+            int poll_ret = px4_poll(fds, 1, 1000);
+
+            /* handle the poll result */
+            if (poll_ret == 0) {
+                /* this means none of our providers is giving us data */
+                PX4_ERR("Got no data within a second");
+
+            } else if (poll_ret < 0) {
+                /* this is seriously bad - should be an emergency */
+                if (error_counter < 10 || error_counter % 50 == 0) {
+                    /* use a counter to prevent flooding (and slowing us down) */
+                    PX4_ERR("ERROR return value from poll(): %d", poll_ret);
+                }
+
+                error_counter++;
+
+            } else {
+
+                if (fds[0].revents & POLLIN) {
+                    /* obtained data for the first file descriptor */
+                    struct sensor_combined_s raw;
+                    struct control_state_s	 _ctrl_state;
+                    /* copy sensors raw data into local buffer */
+                    orb_copy(ORB_ID(sensor_combined), sensor_sub_fd, &raw);
+                    orb_copy(ORB_ID(control_state), control_state_sub_fd, &_ctrl_state);
+                    math::Quaternion q_att(_ctrl_state.q[0], _ctrl_state.q[1], _ctrl_state.q[2], _ctrl_state.q[3]);
+                    math::Vector<3> att_euler=q_att.to_euler()*57.3;
+
+                    PX4_INFO("Attitude:\t%8.4f\t%8.4f\t%8.4f",
+                         (double)att_euler(0),
+                         (double)att_euler(1),
+                         (double)att_euler(2));
+                }
+
+                /* there could be more file descriptors here, in the form like:
+                 * if (fds[1..n].revents & POLLIN) {}
+                 */
+            }
+        }
+
+        PX4_INFO("exiting");
+
+        return 0;
 }
