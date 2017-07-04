@@ -41,6 +41,7 @@
 
 #include "tailsitter.h"
 #include "vtol_att_control_main.h"
+#include <lib/mathlib/mathlib.h>
 
 #define ARSP_YAW_CTRL_DISABLE 7.0f	// airspeed at which we stop controlling yaw during a front transition
 #define THROTTLE_TRANSITION_MAX 0.25f	// maximum added thrust above last value in transition
@@ -236,7 +237,11 @@ void Tailsitter::update_transition_state()
 	if (!_flag_was_in_trans_mode) {
 		// save desired heading for transition and last thrust value
 		_yaw_transition = _v_att_sp->yaw_body;
-		_pitch_transition_start = _v_att_sp->pitch_body;
+		//transition should start from current attitude instead of current setpoint
+		math::Quaternion q_att(_v_att.q[0], _v_att.q[1], _v_att.q[2], _v_att.q[3]);
+		math::Vector<3> att_euler = q_att.to_euler();
+		_pitch_transition_start = att_euler(1);
+		//_pitch_transition_start = _v_att_sp->pitch_body;
 		_thrust_transition_start = _v_att_sp->thrust;
 		_flag_was_in_trans_mode = true;
 	}
