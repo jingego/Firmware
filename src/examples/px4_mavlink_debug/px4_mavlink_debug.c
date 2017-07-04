@@ -63,12 +63,12 @@ int px4_mavlink_debug_main(int argc, char *argv[])
           };
 
     /* advertise debug value */
-	struct debug_key_value_s dbg = { .key = "velx", .value = 0.0f };
+    struct debug_key_value_s dbg = { .key = "in_rw_mode", .value = 0.0f };
 	orb_advert_t pub_dbg = orb_advertise(ORB_ID(debug_key_value), &dbg);
 
-    //int value_counter = 0;
+    int value_counter = 0;
     int error_counter = 0;
-    while (error_counter < 100) {
+    while (error_counter < 500) {
 		/* send one value */
         /* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
         int poll_ret = px4_poll(fds, 1, 1000);
@@ -94,20 +94,16 @@ int px4_mavlink_debug_main(int argc, char *argv[])
                 struct vtol_vehicle_status_s raw;
                 /* copy sensors raw data into local buffer */
                 orb_copy(ORB_ID(vtol_vehicle_status), trans_state_sub_fd, &raw);
-                PX4_INFO("Transition Status:\t%1f",
-                     (double)raw.vtol_in_rw_mode);
+                //PX4_INFO("Transition Status:\t%1f",
+                 //    (double)raw.vtol_in_rw_mode);
 
                 dbg.value = raw.vtol_in_rw_mode;
                 orb_publish(ORB_ID(debug_key_value), pub_dbg, &dbg);
             }
-
-            /* there could be more file descriptors here, in the form like:
-             * if (fds[1..n].revents & POLLIN) {}
-             */
         }
         //warnx("sent one more value..");
 
-        //value_counter++;
+        value_counter++;
 		usleep(500000);
 	}
     PX4_INFO("exiting");
