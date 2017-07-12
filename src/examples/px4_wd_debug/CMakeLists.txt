@@ -31,11 +31,11 @@
 #
 ############################################################################
 px4_add_module(
-	MODULE examples__px4_set_yaw_app
-	MAIN px4_set_yaw_app
+	MODULE examples__px4_wd_debug
+	MAIN px4_wd_debug
 	STACK_MAIN 2000
 	SRCS
-		px4_set_yaw_app.cpp
+		px4_wd_debug.cpp
 	DEPENDS
 		platforms__common
 	)

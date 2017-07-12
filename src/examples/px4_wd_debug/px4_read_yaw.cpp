@@ -51,11 +51,11 @@
 #include <uORB/topics/control_state.h>
 #include <uORB/topics/vehicle_attitude.h>
 
-extern "C" __EXPORT int px4_set_yaw_app_main(int argc, char *argv[]);
+extern "C" __EXPORT int px4_wd_debug_main(int argc, char *argv[]);
 
-int px4_set_yaw_app_main(int argc, char *argv[])
+int px4_wd_debug_main(int argc, char *argv[])
 {
-    PX4_INFO("Hello Sky!");
+    PX4_INFO("Wind Disturbance debug!");
     int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));
     int control_state_sub_fd=orb_subscribe(ORB_ID(control_state));
     orb_set_interval(sensor_sub_fd, 200);

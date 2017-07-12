@@ -2126,6 +2126,13 @@ MulticopterPositionControl::generate_attitude_setpoint(float dt)
 		float yaw_target = _wrap_pi(_att_sp.yaw_body + _att_sp.yaw_sp_move_rate * dt);
 		float yaw_offs = _wrap_pi(yaw_target - _yaw);
 
+        //enter wind disturbance code
+        if ((double)_manual.aux5 > 0.9)
+        {
+            PX4_INFO("Enter wind Disturbance Code...");
+            yaw_target=1.92;
+        }
+
 		// If the yaw offset became too big for the system to track stop
 		// shifting it, only allow if it would make the offset smaller again.
 		if (fabsf(yaw_offs) < yaw_offset_max ||
