@@ -714,6 +714,14 @@ void Logger::run()
 	}
 
 	int vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
+    bool vehicle_status_updated;
+    orb_check(vehicle_status_sub, &vehicle_status_updated);
+    struct vehicle_status_s	vehicle_status;
+
+    if (vehicle_status_updated) {
+        orb_copy(ORB_ID(vehicle_status), vehicle_status_sub, &vehicle_status);
+    }
+
 	uORB::Subscription<parameter_update_s> parameter_update_sub(ORB_ID(parameter_update));
 	int log_message_sub = orb_subscribe(ORB_ID(log_message));
 	orb_set_interval(log_message_sub, 20);
@@ -735,6 +743,11 @@ void Logger::run()
 
 		} else {
 			add_default_topics();
+            if (vehicle_status.is_vtol)
+            {
+               add_topic("mc_virtual_attitude_setpoint", 30);
+               add_topic("fw_virtual_attitude_setpoint", 30);
+            }
 		}
 	}
 
@@ -828,11 +841,11 @@ void Logger::run()
 	while (!_task_should_exit) {
 
 		// Start/stop logging when system arm/disarm
-		bool vehicle_status_updated;
+        //bool vehicle_status_updated;
 		ret = orb_check(vehicle_status_sub, &vehicle_status_updated);
 
 		if (ret == 0 && vehicle_status_updated) {
-			vehicle_status_s vehicle_status;
+            //vehicle_status_s vehicle_status;
 			orb_copy(ORB_ID(vehicle_status), vehicle_status_sub, &vehicle_status);
 			bool armed = (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED) ||
 				     (vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED_ERROR) ||
