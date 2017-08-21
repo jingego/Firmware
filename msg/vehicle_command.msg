@@ -73,7 +73,8 @@ uint32 VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED = 1	# Command TEMPORARY REJECTED/
 uint32 VEHICLE_CMD_RESULT_DENIED = 2			# Command PERMANENTLY DENIED |
 uint32 VEHICLE_CMD_RESULT_UNSUPPORTED = 3		# Command UNKNOWN/UNSUPPORTED |
 uint32 VEHICLE_CMD_RESULT_FAILED = 4			# Command executed, but failed |
-uint32 VEHICLE_CMD_RESULT_ENUM_END = 5			#
+uint32 VEHICLE_CMD_RESULT_IN_PROGRESS = 5		# Command being executed |
+uint32 VEHICLE_CMD_RESULT_ENUM_END = 6			#
 
 uint32 VEHICLE_MOUNT_MODE_RETRACT = 0				# Load and keep safe position (Roll,Pitch,Yaw) from permanent memory and stop stabilization |
 uint32 VEHICLE_MOUNT_MODE_NEUTRAL = 1				# Load and keep neutral position (Roll,Pitch,Yaw) from permanent memory. |
@@ -98,9 +99,10 @@ float32 param4			# Parameter 4, as defined by MAVLink uint32 VEHICLE_CMD enum.
 float64 param5			# Parameter 5, as defined by MAVLink uint32 VEHICLE_CMD enum.
 float64 param6			# Parameter 6, as defined by MAVLink uint32 VEHICLE_CMD enum.
 float32 param7			# Parameter 7, as defined by MAVLink uint32 VEHICLE_CMD enum.
-uint32 command			# Command ID, as defined MAVLink by uint32 VEHICLE_CMD enum.
-uint32 target_system		# System which should execute the command
-uint32 target_component		# Component which should execute the command, 0 for all components
-uint32 source_system		# System sending the command
-uint32 source_component		# Component sending the command
+uint16 command			# Command ID, as defined MAVLink by uint32 VEHICLE_CMD enum.
+uint8 target_system		# System which should execute the command
+uint8 target_component		# Component which should execute the command, 0 for all components
+uint8 source_system		# System sending the command
+uint8 source_component		# Component sending the command
 uint8 confirmation		# 0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)
+uint8 from_external

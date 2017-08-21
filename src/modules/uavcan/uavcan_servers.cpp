@@ -31,6 +31,8 @@
  *
  ****************************************************************************/
 
+#include <px4_tasks.h>
+
 #include <nuttx/config.h>
 
 #include <cstdlib>
@@ -44,7 +46,6 @@
 #include <systemlib/param/param.h>
 #include <systemlib/mixer/mixer.h>
 #include <systemlib/board_serial.h>
-#include <systemlib/scheduling_priorities.h>
 #include <version/version.h>
 #include <arch/board/board.h>
 #include <arch/chip/chip.h>
@@ -533,9 +534,16 @@ pthread_addr_t UavcanServers::run(pthread_addr_t)
 			}
 
 			// Acknowledge the received command
-			struct vehicle_command_ack_s ack = {};
-			ack.command = cmd.command;
-			ack.result = cmd_ack_result;
+			struct vehicle_command_ack_s ack = {
+				.timestamp = 0,
+				.result_param2 = 0,
+				.command = cmd.command,
+				.result = cmd_ack_result,
+				.from_external = 0,
+				.result_param1 = 0,
+				.target_system = cmd.source_system,
+				.target_component = cmd.source_component
+			};
 
 			if (_command_ack_pub == nullptr) {
 				_command_ack_pub = orb_advertise_queue(ORB_ID(vehicle_command_ack), &ack, vehicle_command_ack_s::ORB_QUEUE_LENGTH);

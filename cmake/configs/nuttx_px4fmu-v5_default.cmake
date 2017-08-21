@@ -32,10 +32,11 @@ set(config_module_list
 	drivers/lis3mdl
 	drivers/ll40ls
 	drivers/mb12xx
-	drivers/meas_airspeed
 	drivers/mkblctrl
 	drivers/mpu6000
 	drivers/mpu9250
+	drivers/ms4525_airspeed
+	drivers/ms5525_airspeed
 	drivers/ms5611
 	drivers/oreoled
 	drivers/pwm_input
@@ -43,6 +44,7 @@ set(config_module_list
 	drivers/px4flow
 	drivers/px4fmu
 	drivers/rgbled_pwm
+	drivers/sdp3x_airspeed
 	drivers/sf0x
 	drivers/sf1xx
 	drivers/snapdragon_rc_pwm
@@ -138,6 +140,9 @@ set(config_module_list
 	modules/systemlib/mixer
 	modules/uORB
 
+	# micro RTPS
+	modules/micrortps_bridge/micrortps_client
+
 	#
 	# Libraries
 	#
@@ -157,6 +162,7 @@ set(config_module_list
 	lib/tailsitter_recovery
 	lib/terrain_estimation
 	lib/version
+	lib/micro-CDR
 
 	#
 	# Platform
@@ -206,6 +212,14 @@ set(config_module_list
 	# EKF
 	#examples/ekf_att_pos_estimator
 )
+
+set(config_rtps_send_topics
+   sensor_combined
+   )
+
+set(config_rtps_receive_topics
+   sensor_baro
+   )
 
 set(config_extra_builtin_cmds
 	serdis

@@ -19,6 +19,7 @@ set(config_module_list
 	drivers/boards/mindpx-v2
 	drivers/rgbled
 	#drivers/rgbled_pwm
+	drivers/mpu6000
 	drivers/mpu9250
 	drivers/lsm303d
 	drivers/l3gd20
@@ -40,7 +41,9 @@ set(config_module_list
 	drivers/blinkm
 	drivers/airspeed
 	drivers/ets_airspeed
-	drivers/meas_airspeed
+	drivers/ms4525_airspeed
+	drivers/ms5525_airspeed
+	drivers/sdp3x_airspeed
 	drivers/frsky_telemetry
 	modules/sensors
 	#drivers/mkblctrl
@@ -153,6 +156,7 @@ set(config_module_list
 	lib/version
 	lib/DriverFramework/framework
 	platforms/nuttx
+	lib/micro-CDR
 
 	# had to add for cmake, not sure why wasn't in original config
 	platforms/common

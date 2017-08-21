@@ -25,7 +25,9 @@ set(config_module_list
 	drivers/pwm_out_sim
 	drivers/airspeed
 	drivers/ets_airspeed
-	drivers/meas_airspeed
+	drivers/ms4525_airspeed
+	drivers/ms5525_airspeed
+	drivers/sdp3x_airspeed
 	#drivers/frsky_telemetry
 	modules/sensors
 	#drivers/pwm_input
@@ -129,6 +131,7 @@ set(config_module_list
 	lib/version
 	lib/DriverFramework/framework
 	platforms/nuttx
+	lib/micro-CDR
 
 	# had to add for cmake, not sure why wasn't in original config
 	platforms/common
