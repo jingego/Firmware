@@ -39,7 +39,6 @@
 #pragma once
 
 #include <px4_posix.h>
-#include <uORB/topics/hil_sensor.h>
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/actuator_outputs.h>
 #include <uORB/topics/vehicle_attitude.h>
@@ -142,7 +141,7 @@ public:
 		px4_sem_init(&_lock, 0, _max_readers);
 	}
 
-	~Report() {};
+	~Report() {}
 
 	bool copyData(void *outbuf, int len)
 	{

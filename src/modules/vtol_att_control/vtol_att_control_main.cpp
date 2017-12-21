@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2013, 2014 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2013 - 2017 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -74,7 +74,6 @@ VtolAttitudeControl::VtolAttitudeControl() :
 	_v_control_mode_sub(-1),
 	_params_sub(-1),
 	_manual_control_sp_sub(-1),
-	_armed_sub(-1),
 	_local_pos_sub(-1),
 	_pos_sp_triplet_sub(-1),
 	_airspeed_sub(-1),
@@ -89,6 +88,7 @@ VtolAttitudeControl::VtolAttitudeControl() :
 	_vtol_vehicle_status_pub(nullptr),
 	_v_rates_sp_pub(nullptr),
 	_v_att_sp_pub(nullptr),
+	_v_cmd_ack_pub(nullptr),
 	_transition_command(vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC),
 	_abort_front_transition(false)
 
@@ -108,7 +108,6 @@ VtolAttitudeControl::VtolAttitudeControl() :
 	memset(&_actuators_out_1, 0, sizeof(_actuators_out_1));
 	memset(&_actuators_mc_in, 0, sizeof(_actuators_mc_in));
 	memset(&_actuators_fw_in, 0, sizeof(_actuators_fw_in));
-	memset(&_armed, 0, sizeof(_armed));
 	memset(&_local_pos, 0, sizeof(_local_pos));
 	memset(&_pos_sp_triplet, 0, sizeof(_pos_sp_triplet));
 	memset(&_airspeed, 0, sizeof(_airspeed));
@@ -134,10 +133,15 @@ VtolAttitudeControl::VtolAttitudeControl() :
 	_params_handles.vtol_type = param_find("VT_TYPE");
 	_params_handles.elevons_mc_lock = param_find("VT_ELEV_MC_LOCK");
 	_params_handles.fw_min_alt = param_find("VT_FW_MIN_ALT");
+	_params_handles.fw_alt_err = param_find("VT_FW_ALT_ERR");
 	_params_handles.fw_qc_max_pitch = param_find("VT_FW_QC_P");
 	_params_handles.fw_qc_max_roll = param_find("VT_FW_QC_R");
 	_params_handles.front_trans_time_openloop = param_find("VT_F_TR_OL_TM");
 	_params_handles.front_trans_time_min = param_find("VT_TRANS_MIN_TM");
+
+	_params_handles.wv_takeoff = param_find("VT_WV_TKO_EN");
+	_params_handles.wv_land = param_find("VT_WV_LND_EN");
+	_params_handles.wv_loiter = param_find("VT_WV_LTR_EN");
 
 	/* fetch initial parameter values */
 	parameters_update();
@@ -215,19 +219,6 @@ void VtolAttitudeControl::vehicle_manual_poll()
 
 	if (updated) {
 		orb_copy(ORB_ID(manual_control_setpoint), _manual_control_sp_sub, &_manual_control_sp);
-	}
-}
-/**
-* Check for arming status updates.
-*/
-void VtolAttitudeControl::arming_status_poll()
-{
-	/* check if there is a new setpoint */
-	bool updated;
-	orb_check(_armed_sub, &updated);
-
-	if (updated) {
-		orb_copy(ORB_ID(actuator_armed), _armed_sub, &_armed);
 	}
 }
 
@@ -376,6 +367,22 @@ VtolAttitudeControl::vehicle_local_pos_poll()
 }
 
 /**
+* Check for setpoint updates.
+*/
+void
+VtolAttitudeControl::vehicle_local_pos_sp_poll()
+{
+	bool updated;
+	/* Check if parameters have changed */
+	orb_check(_local_pos_sp_sub, &updated);
+
+	if (updated) {
+		orb_copy(ORB_ID(vehicle_local_position_setpoint), _local_pos_sp_sub, &_local_pos_sp);
+	}
+
+}
+
+/**
 * Check for position setpoint updates.
 */
 void
@@ -477,6 +484,31 @@ VtolAttitudeControl::handle_command()
 	// update transition command if necessary
 	if (_vehicle_cmd.command == vehicle_command_s::VEHICLE_CMD_DO_VTOL_TRANSITION) {
 		_transition_command = int(_vehicle_cmd.param1 + 0.5f);
+
+		// Report that we have received the command no matter what we actually do with it.
+		// This might not be optimal but is better than no response at all.
+
+		if (_vehicle_cmd.from_external) {
+			vehicle_command_ack_s command_ack = {
+				.timestamp = hrt_absolute_time(),
+				.result_param2 = 0,
+				.command = _vehicle_cmd.command,
+				.result = (uint8_t)vehicle_command_ack_s::VEHICLE_RESULT_ACCEPTED,
+				.from_external = false,
+				.result_param1 = 0,
+				.target_system = _vehicle_cmd.source_system,
+				.target_component = _vehicle_cmd.source_component
+			};
+
+			if (_v_cmd_ack_pub == nullptr) {
+				_v_cmd_ack_pub = orb_advertise_queue(ORB_ID(vehicle_command_ack), &command_ack,
+								     vehicle_command_ack_s::ORB_QUEUE_LENGTH);
+
+			} else {
+				orb_publish(ORB_ID(vehicle_command_ack), _v_cmd_ack_pub, &command_ack);
+
+			}
+		}
 	}
 }
 
@@ -582,6 +614,10 @@ VtolAttitudeControl::parameters_update()
 	param_get(_params_handles.fw_min_alt, &v);
 	_params.fw_min_alt = v;
 
+	/* maximum negative altitude error for FW mode (Adaptive QuadChute) */
+	param_get(_params_handles.fw_alt_err, &v);
+	_params.fw_alt_err = v;
+
 	/* maximum pitch angle (QuadChute) */
 	param_get(_params_handles.fw_qc_max_pitch, &l);
 	_params.fw_qc_max_pitch = l;
@@ -600,6 +636,16 @@ VtolAttitudeControl::parameters_update()
 	 */
 	_params.front_trans_time_min = math::min(_params.front_trans_time_openloop * 0.9f,
 				       _params.front_trans_time_min);
+
+	/* weathervane */
+	param_get(_params_handles.wv_takeoff, &l);
+	_params.wv_takeoff = (l == 1);
+
+	param_get(_params_handles.wv_loiter, &l);
+	_params.wv_loiter = (l == 1);
+
+	param_get(_params_handles.wv_land, &l);
+	_params.wv_land = (l == 1);
 
 	// update the parameters of the instances of base VtolType
 	if (_vtol_type != nullptr) {
@@ -666,8 +712,8 @@ void VtolAttitudeControl::task_main()
 	_v_control_mode_sub    = orb_subscribe(ORB_ID(vehicle_control_mode));
 	_params_sub            = orb_subscribe(ORB_ID(parameter_update));
 	_manual_control_sp_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
-	_armed_sub             = orb_subscribe(ORB_ID(actuator_armed));
 	_local_pos_sub         = orb_subscribe(ORB_ID(vehicle_local_position));
+	_local_pos_sp_sub         = orb_subscribe(ORB_ID(vehicle_local_position_setpoint));
 	_pos_sp_triplet_sub    = orb_subscribe(ORB_ID(position_setpoint_triplet));
 	_airspeed_sub          = orb_subscribe(ORB_ID(airspeed));
 	_battery_status_sub	   = orb_subscribe(ORB_ID(battery_status));
@@ -748,7 +794,6 @@ void VtolAttitudeControl::task_main()
 		fw_virtual_att_sp_poll();
 		vehicle_control_mode_poll();	//Check for changes in vehicle control mode.
 		vehicle_manual_poll();			//Check for changes in manual inputs.
-		arming_status_poll();			//Check for arming status updates.
 		vehicle_attitude_setpoint_poll();//Check for changes in attitude set points
 		vehicle_attitude_poll();		//Check for changes in attitude
 		actuator_controls_mc_poll();	//Check for changes in mc_attitude_control output
@@ -757,6 +802,7 @@ void VtolAttitudeControl::task_main()
 		vehicle_rates_sp_fw_poll();
 		parameters_update_poll();
 		vehicle_local_pos_poll();			// Check for new sensor values
+		vehicle_local_pos_sp_poll();
 		pos_sp_triplet_poll();
 		vehicle_airspeed_poll();
 		vehicle_battery_poll();
@@ -883,7 +929,7 @@ VtolAttitudeControl::start()
 	_control_task = px4_task_spawn_cmd("vtol_att_control",
 					   SCHED_DEFAULT,
 					   SCHED_PRIORITY_MAX - 10,
-					   1200,
+					   1230,
 					   (px4_main_t)&VtolAttitudeControl::task_main_trampoline,
 					   nullptr);
 
