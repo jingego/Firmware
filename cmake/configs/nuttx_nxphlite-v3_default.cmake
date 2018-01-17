@@ -1,4 +1,3 @@
-include(nuttx/px4_impl_nuttx)
 
 px4_nuttx_configure(HWCLASS m4 CONFIG nsh ROMFS y ROMFSROOT px4fmu_common)
 
@@ -17,7 +16,7 @@ set(config_module_list
 	drivers/bst
 	drivers/camera_trigger
 	drivers/device
-	drivers/ets_airspeed
+	drivers/differential_pressure
 	drivers/frsky_telemetry
 	drivers/fxos8701cq
 	drivers/fxas21002c
@@ -33,15 +32,11 @@ set(config_module_list
 	drivers/l3gd20
 	drivers/led
 	drivers/lis3mdl
-	drivers/ll40ls
-	drivers/lsm303d
-	drivers/mb12xx
+	drivers/distance_sensor
 	drivers/mkblctrl
 	drivers/mpl3115a2
 	drivers/mpu6000
 	drivers/mpu9250
-	drivers/ms4525_airspeed
-	drivers/ms5525_airspeed
 	drivers/ms5611
 	drivers/oreoled
 # NOT Portable YET drivers/pwm_input
@@ -50,13 +45,7 @@ set(config_module_list
 	drivers/px4fmu
 	drivers/rgbled
 	drivers/rgbled_pwm
-	drivers/sdp3x_airspeed
-	drivers/sf0x
-	drivers/sf1xx
-	drivers/snapdragon_rc_pwm
-	drivers/srf02
 	drivers/tap_esc
-	drivers/teraranger
 	drivers/vmount
 	modules/sensors
 
@@ -86,7 +75,7 @@ set(config_module_list
 	#
 	# Testing
 	#
-	drivers/sf0x/sf0x_tests
+	drivers/distance_sensor/sf0x/sf0x_tests
 ### NOT Portable YET 	drivers/test_ppm
 	#lib/rc/rc_tests
 	modules/commander/commander_tests

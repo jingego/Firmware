@@ -1,4 +1,3 @@
-include(nuttx/px4_impl_nuttx)
 
 px4_nuttx_configure(HWCLASS m4 CONFIG nsh ROMFS y ROMFSROOT tap_common)
 
@@ -22,8 +21,7 @@ set(config_module_list
 	drivers/hmc5883
 	drivers/gps
 	drivers/airspeed
-	drivers/ms4525_airspeed
-	drivers/ms5525_airspeed
+	drivers/differential_pressure
 	modules/sensors
 	drivers/vmount
 

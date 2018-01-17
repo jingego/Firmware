@@ -1,4 +1,3 @@
-include(nuttx/px4_impl_nuttx)
 
 px4_nuttx_configure(HWCLASS m7 CONFIG nsh ROMFS y ROMFSROOT px4fmu_common)
 
@@ -17,7 +16,6 @@ set(config_module_list
 	drivers/bst
 	drivers/camera_trigger
 	drivers/device
-	drivers/ets_airspeed
 	drivers/frsky_telemetry
 	drivers/gps
 	drivers/hmc5883
@@ -26,13 +24,11 @@ set(config_module_list
 	drivers/hott/hott_telemetry
 	drivers/led
 	drivers/lis3mdl
-	drivers/ll40ls
-	drivers/mb12xx
+	drivers/distance_sensor
 	drivers/mkblctrl
 	drivers/mpu6000
 	drivers/mpu9250
-	drivers/ms4525_airspeed
-	drivers/ms5525_airspeed
+	drivers/differential_pressure
 	drivers/ms5611
 	drivers/oreoled
 	drivers/pwm_input
@@ -40,15 +36,10 @@ set(config_module_list
 	drivers/px4flow
 	drivers/px4fmu
 	drivers/rgbled
-	drivers/sdp3x_airspeed
-	drivers/sf0x
-	drivers/snapdragon_rc_pwm
-	drivers/srf02
 	drivers/stm32
 	drivers/stm32/adc
 	drivers/stm32/tone_alarm
 	drivers/tap_esc
-	drivers/teraranger
 	modules/sensors
 
 	#

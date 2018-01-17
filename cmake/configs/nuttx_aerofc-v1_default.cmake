@@ -1,4 +1,3 @@
-include(nuttx/px4_impl_nuttx)
 
 px4_nuttx_configure(HWCLASS m4 CONFIG nsh ROMFS y ROMFSROOT px4fmu_common)
 
@@ -19,7 +18,7 @@ set(config_module_list
 	drivers/hmc5883
 	drivers/gps
 	drivers/ist8310
-	drivers/ll40ls
+	drivers/distance_sensor
 	drivers/aerofc_adc
 	modules/sensors
 

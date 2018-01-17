@@ -2,9 +2,9 @@
 # FMUv3 is FMUv2 with access to the full 2MB flash
 set(BOARD px4fmu-v2 CACHE string "" FORCE)
 set(FW_NAME nuttx_px4fmu-v3_default.elf CACHE string "" FORCE)
+set(FW_PROTOTYPE px4fmu-v3 CACHE string "" FORCE)
 set(LD_SCRIPT ld_full.script CACHE string "" FORCE)
 
-include(nuttx/px4_impl_nuttx)
 px4_nuttx_configure(HWCLASS m4 CONFIG nsh ROMFS y ROMFSROOT px4fmu_common IO px4io-v2)
 
 set(config_uavcan_num_ifaces 2)
@@ -22,7 +22,7 @@ set(config_module_list
 	drivers/bst
 	drivers/camera_trigger
 	drivers/device
-	drivers/ets_airspeed
+	drivers/differential_pressure
 	drivers/frsky_telemetry
 	drivers/gps
 	drivers/hmc5883
@@ -34,14 +34,11 @@ set(config_module_list
 	drivers/l3gd20
 	drivers/led
 	drivers/lis3mdl
-	drivers/ll40ls
+	drivers/distance_sensor
 	drivers/lsm303d
-	drivers/mb12xx
 	drivers/mkblctrl
 	drivers/mpu6000
 	drivers/mpu9250
-	drivers/ms4525_airspeed
-	drivers/ms5525_airspeed
 	drivers/ms5611
 	drivers/oreoled
 	drivers/protocol_splitter
@@ -51,17 +48,10 @@ set(config_module_list
 	drivers/px4fmu
 	drivers/px4io
 	drivers/rgbled
-	drivers/sdp3x_airspeed
-	drivers/sf0x
-	drivers/sf1xx
-	drivers/snapdragon_rc_pwm
-	drivers/srf02
 	drivers/stm32
 	drivers/stm32/adc
 	drivers/stm32/tone_alarm
 	drivers/tap_esc
-	drivers/teraranger
-	drivers/ulanding
 	drivers/vmount
 	modules/sensors
 
@@ -91,7 +81,7 @@ set(config_module_list
 	#
 	# Testing
 	#
-	drivers/sf0x/sf0x_tests
+	drivers/distance_sensor/sf0x/sf0x_tests
 	drivers/test_ppm
 	lib/controllib/controllib_test
 	#lib/rc/rc_tests
@@ -119,6 +109,7 @@ set(config_module_list
 	#
 	modules/attitude_estimator_q
 	modules/ekf2
+	modules/landing_target_estimator
 	modules/local_position_estimator
 	modules/position_estimator_inav
 
