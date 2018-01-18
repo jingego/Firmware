@@ -7,37 +7,34 @@ set(config_module_list
 	#
 	# Board support modules
 	#
+	drivers/barometer
+	drivers/differential_pressure
+	drivers/distance_sensor
+	drivers/magnetometer
+
 	drivers/airspeed
 	drivers/blinkm
 #NOT Supported	drivers/bma180
 #NOT Supported	drivers/bmi160
-	drivers/bmp280
 	drivers/boards
 	drivers/bst
 	drivers/camera_trigger
 	drivers/device
-	drivers/differential_pressure
 	drivers/frsky_telemetry
 	drivers/fxos8701cq
 	drivers/fxas21002c
 	drivers/gps
-	drivers/hmc5883
 	drivers/hott
-	drivers/hott/hott_sensors
-	drivers/hott/hott_telemetry
 	drivers/iridiumsbd
 	drivers/kinetis
 	drivers/kinetis/adc
 	drivers/kinetis/tone_alarm
 	drivers/l3gd20
 	drivers/led
-	drivers/lis3mdl
-	drivers/distance_sensor
 	drivers/mkblctrl
-	drivers/mpl3115a2
+	drivers/barometer/mpl3115a2
 	drivers/mpu6000
 	drivers/mpu9250
-	drivers/ms5611
 	drivers/oreoled
 # NOT Portable YET drivers/pwm_input
 	drivers/pwm_out_sim

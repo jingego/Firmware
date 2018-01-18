@@ -6,11 +6,14 @@ set(config_module_list
 	#
 	# Board support modules
 	#
+	#drivers/barometer
 	drivers/differential_pressure
 	drivers/distance_sensor
+	#drivers/magnetometer
 
 	#drivers/adis16448
 	drivers/airspeed
+	drivers/barometer/ms5611
 	#drivers/blinkm
 	#drivers/bmi160
 	#drivers/bmp280
@@ -20,22 +23,18 @@ set(config_module_list
 	drivers/device
 	#drivers/frsky_telemetry
 	drivers/gps
-	drivers/hmc5883
 	#drivers/hott
-	#drivers/hott/hott_sensors
-	#drivers/hott/hott_telemetry
 	#drivers/iridiumsbd
 	#drivers/irlock
-	#drivers/ist8310
 	drivers/l3gd20
 	drivers/led
-	drivers/lis3mdl
 	drivers/lsm303d
+	drivers/magnetometer/hmc5883
+	drivers/magnetometer/lis3mdl
 	#drivers/mb12xx
 	#drivers/mkblctrl
 	drivers/mpu6000
 	drivers/mpu9250
-	drivers/ms5611
 	#drivers/oreoled
 	#drivers/protocol_splitter
 	drivers/pwm_input

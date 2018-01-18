@@ -7,6 +7,11 @@ set(config_module_list
 	#
 	# Board support modules
 	#
+	drivers/barometer
+	drivers/differential_pressure
+	drivers/distance_sensor
+	#drivers/magnetometer
+
 	drivers/device
 	drivers/stm32
 	drivers/stm32/adc
@@ -16,12 +21,9 @@ set(config_module_list
 	drivers/boards
 	drivers/lsm303d
 	drivers/l3gd20
-	drivers/ms5611
 	drivers/gps
 	drivers/pwm_out_sim
 	drivers/airspeed
-	drivers/differential_pressure
-	drivers/distance_sensor
 	#drivers/frsky_telemetry
 	modules/sensors
 	#drivers/pwm_input
