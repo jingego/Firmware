@@ -69,14 +69,13 @@
 #include <mpu9250/MPU9250.hpp>
 #include <DevMgr.hpp>
 
-// We don't want to auto publish, therefore set this to 0.
-#define MPU9250_NEVER_AUTOPUBLISH_US 0
-
 #define MPU9250_ACCEL_DEFAULT_RATE 1000
 #define MPU9250_GYRO_DEFAULT_RATE 1000
 
 #define MPU9250_ACCEL_DEFAULT_DRIVER_FILTER_FREQ 30
 #define MPU9250_GYRO_DEFAULT_DRIVER_FILTER_FREQ 30
+
+#define MPU9250_PUB_RATE 250
 
 
 extern "C" { __EXPORT int df_mpu9250_wrapper_main(int argc, char *argv[]); }
@@ -198,8 +197,8 @@ DfMpu9250Wrapper::DfMpu9250Wrapper(bool mag_enabled, enum Rotation rotation) :
 	_accel_orb_class_instance(-1),
 	_gyro_orb_class_instance(-1),
 	_mag_orb_class_instance(-1),
-	_accel_int(MPU9250_NEVER_AUTOPUBLISH_US, false),
-	_gyro_int(MPU9250_NEVER_AUTOPUBLISH_US, true),
+	_accel_int(1000000 / MPU9250_PUB_RATE, false),
+	_gyro_int(1000000 / MPU9250_PUB_RATE, true),
 	_accel_filter_x(MPU9250_ACCEL_DEFAULT_RATE, MPU9250_ACCEL_DEFAULT_DRIVER_FILTER_FREQ),
 	_accel_filter_y(MPU9250_ACCEL_DEFAULT_RATE, MPU9250_ACCEL_DEFAULT_DRIVER_FILTER_FREQ),
 	_accel_filter_z(MPU9250_ACCEL_DEFAULT_RATE, MPU9250_ACCEL_DEFAULT_DRIVER_FILTER_FREQ),
@@ -621,8 +620,8 @@ int DfMpu9250Wrapper::_publish(struct imu_sensor_data &data)
 	accel_report.y = _accel_filter_y.apply(y_in_new);
 	accel_report.z = _accel_filter_z.apply(z_in_new);
 
-	math::Vector<3> aval(x_in_new, y_in_new, z_in_new);
-	math::Vector<3> aval_integrated;
+	matrix::Vector3f aval(x_in_new, y_in_new, z_in_new);
+	matrix::Vector3f aval_integrated;
 
 	_accel_int.put(accel_report.timestamp, aval, aval_integrated, accel_report.integral_dt);
 	accel_report.x_integral = aval_integrated(0);
@@ -653,8 +652,8 @@ int DfMpu9250Wrapper::_publish(struct imu_sensor_data &data)
 	gyro_report.y = _gyro_filter_y.apply(y_gyro_in_new);
 	gyro_report.z = _gyro_filter_z.apply(z_gyro_in_new);
 
-	math::Vector<3> gval(x_gyro_in_new, y_gyro_in_new, z_gyro_in_new);
-	math::Vector<3> gval_integrated;
+	matrix::Vector3f gval(x_gyro_in_new, y_gyro_in_new, z_gyro_in_new);
+	matrix::Vector3f gval_integrated;
 
 	_gyro_int.put(gyro_report.timestamp, gval, gval_integrated, gyro_report.integral_dt);
 	gyro_report.x_integral = gval_integrated(0);

@@ -16,18 +16,21 @@ set(config_module_list
 	# Board support modules
 	#
 	drivers/airspeed
-	drivers/device
-	drivers/distance_sensor
 	#drivers/barometer
+	drivers/batt_smbus
+	drivers/device
 	drivers/differential_pressure
+	drivers/distance_sensor
+	#drivers/telemetry
 
 	modules/sensors
-	platforms/posix/drivers/df_mpu9250_wrapper
-	platforms/posix/drivers/df_lsm9ds1_wrapper
-	platforms/posix/drivers/df_ms5611_wrapper
+
 	platforms/posix/drivers/df_hmc5883_wrapper
-	platforms/posix/drivers/df_trone_wrapper
 	platforms/posix/drivers/df_isl29501_wrapper
+	platforms/posix/drivers/df_lsm9ds1_wrapper
+	platforms/posix/drivers/df_mpu9250_wrapper
+	platforms/posix/drivers/df_ms5611_wrapper
+	platforms/posix/drivers/df_trone_wrapper
 
 	#
 	# System commands
@@ -39,6 +42,7 @@ set(config_module_list
 	systemcmds/esc_calib
 	systemcmds/reboot
 	systemcmds/topic_listener
+	systemcmds/tune_control
 	systemcmds/perf
 
 	#
@@ -47,6 +51,7 @@ set(config_module_list
 	modules/attitude_estimator_q
 	modules/position_estimator_inav
 	modules/local_position_estimator
+	modules/landing_target_estimator
 	modules/ekf2
 
 	#
@@ -96,22 +101,12 @@ set(config_module_list
 	lib/ecl
 	lib/geo
 	lib/geo_lookup
-	lib/launchdetection
 	lib/led
 	lib/mathlib
-	lib/mathlib/math/filter
 	lib/mixer
-	lib/runway_takeoff
-	lib/tailsitter_recovery
 	lib/terrain_estimation
+	lib/tunes
 	lib/version
-
-	#
-	# POSIX
-	#
-	platforms/common
-	platforms/posix/px4_layer
-	platforms/posix/work_queue
 )
 
 #

@@ -69,11 +69,11 @@ set(msg_files
 	log_message.msg
 	manual_control_setpoint.msg
 	mavlink_log.msg
-	mc_att_ctrl_status.msg
 	mission.msg
 	mission_result.msg
 	mount_orientation.msg
 	multirotor_motor_limits.msg
+	obstacle_distance.msg
 	offboard_control_mode.msg
 	optical_flow.msg
 	parameter_update.msg
@@ -82,6 +82,7 @@ set(msg_files
 	power_button_state.msg
 	pwm_input.msg
 	qshell_req.msg
+	rate_ctrl_status.msg
 	rc_channels.msg
 	rc_parameter_map.msg
 	safety.msg
@@ -104,6 +105,7 @@ set(msg_files
 	test_motor.msg
 	time_offset.msg
 	transponder_report.msg
+	tune_control.msg
 	uavcan_parameter_request.msg
 	uavcan_parameter_value.msg
 	ulog_stream.msg
@@ -125,6 +127,18 @@ set(msg_files
 	vtol_vehicle_status.msg
 	wind_estimate.msg
 	)
+
+if(NOT EXTERNAL_MODULES_LOCATION STREQUAL "")
+	# Check that the msg directory and the CMakeLists.txt file exists
+	if(EXISTS ${EXTERNAL_MODULES_LOCATION}/msg/CMakeLists.txt)
+		add_subdirectory(${EXTERNAL_MODULES_LOCATION}/msg external_msg)
+
+		# Add each of the external message files to the global msg_files list
+		foreach(external_msg_file ${config_msg_list_external})
+			list(APPEND msg_files ${EXTERNAL_MODULES_LOCATION}/msg/${external_msg_file})
+		endforeach()
+	endif()
+endif()
 
 px4_add_git_submodule(TARGET git_gencpp PATH tools/gencpp)
 px4_add_git_submodule(TARGET git_genmsg PATH tools/genmsg)

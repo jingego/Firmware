@@ -48,22 +48,23 @@
 #ifndef FIXEDWINGPOSITIONCONTROL_HPP_
 #define FIXEDWINGPOSITIONCONTROL_HPP_
 
-#include <px4_config.h>
-#include <px4_defines.h>
-#include <px4_posix.h>
-#include <px4_tasks.h>
+#include "Landingslope.hpp"
+#include "launchdetection/LaunchDetector.h"
+#include "runway_takeoff/RunwayTakeoff.h"
 
 #include <cfloat>
-
-#include "Landingslope.hpp"
 
 #include <drivers/drv_hrt.h>
 #include <ecl/l1/ecl_l1_pos_controller.h>
 #include <ecl/tecs/tecs.h>
 #include <geo/geo.h>
-#include <launchdetection/LaunchDetector.h>
 #include <mathlib/mathlib.h>
-#include <runway_takeoff/RunwayTakeoff.h>
+#include <px4_config.h>
+#include <px4_defines.h>
+#include <px4_module.h>
+#include <px4_module_params.h>
+#include <px4_posix.h>
+#include <px4_tasks.h>
 #include <systemlib/perf_counter.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/airspeed.h>
@@ -71,16 +72,16 @@
 #include <uORB/topics/manual_control_setpoint.h>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/position_setpoint_triplet.h>
-#include <uORB/topics/sensor_bias.h>
 #include <uORB/topics/sensor_baro.h>
+#include <uORB/topics/sensor_bias.h>
 #include <uORB/topics/tecs_status.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_global_position.h>
-#include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_land_detected.h>
+#include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/uORB.h>
 #include <vtol_att_control/vtol_type.h>
@@ -120,33 +121,34 @@ using uORB::Subscription;
 using namespace launchdetection;
 using namespace runwaytakeoff;
 
-class FixedwingPositionControl
+class FixedwingPositionControl final : public ModuleBase<FixedwingPositionControl>, public ModuleParams
 {
 public:
 	FixedwingPositionControl();
-	~FixedwingPositionControl();
+	~FixedwingPositionControl() override;
 	FixedwingPositionControl(const FixedwingPositionControl &) = delete;
 	FixedwingPositionControl operator=(const FixedwingPositionControl &other) = delete;
 
-	/**
-	 * Start the sensors task.
-	 *
-	 * @return	OK on success.
-	 */
-	static int	start();
+	/** @see ModuleBase */
+	static int task_spawn(int argc, char *argv[]);
 
-	/**
-	 * Task status
-	 *
-	 * @return	true if the mainloop is running
-	 */
-	bool		task_running() { return _task_running; }
+	/** @see ModuleBase */
+	static FixedwingPositionControl *instantiate(int argc, char *argv[]);
+
+	/** @see ModuleBase */
+	static int custom_command(int argc, char *argv[]);
+
+	/** @see ModuleBase */
+	static int print_usage(const char *reason = nullptr);
+
+	/** @see ModuleBase::run() */
+	void run() override;
+
+	/** @see ModuleBase::print_status() */
+	int print_status() override;
 
 private:
 	orb_advert_t	_mavlink_log_pub{nullptr};
-
-	bool		_task_should_exit{false};		///< if true, sensor task should exit */
-	bool		_task_running{false};			///< if true, task is running in its mainloop */
 
 	int		_global_pos_sub{-1};
 	int		_local_pos_sub{-1};
@@ -234,7 +236,7 @@ private:
 
 	float _groundspeed_undershoot{0.0f};			///< ground speed error to min. speed in m/s
 
-	math::Matrix<3, 3> _R_nb;				///< current attitude
+	Dcmf _R_nb;				///< current attitude
 	float _roll{0.0f};
 	float _pitch{0.0f};
 	float _yaw{0.0f};
@@ -434,31 +436,25 @@ private:
 	 */
 	bool		update_desired_altitude(float dt);
 
-	bool		control_position(const math::Vector<2> &curr_pos, const math::Vector<2> &ground_speed,
-					 const position_setpoint_s &pos_sp_prev, const position_setpoint_s &pos_sp_curr);
+	bool		control_position(const Vector2f &curr_pos, const Vector2f &ground_speed, const position_setpoint_s &pos_sp_prev,
+					 const position_setpoint_s &pos_sp_curr);
+	void		control_takeoff(const Vector2f &curr_pos, const Vector2f &ground_speed, const position_setpoint_s &pos_sp_prev,
+					const position_setpoint_s &pos_sp_curr);
+	void		control_landing(const Vector2f &curr_pos, const Vector2f &ground_speed, const position_setpoint_s &pos_sp_prev,
+					const position_setpoint_s &pos_sp_curr);
 
 	float		get_tecs_pitch();
 	float		get_tecs_thrust();
 
 	float		get_demanded_airspeed();
 	float		calculate_target_airspeed(float airspeed_demand);
-	void		calculate_gndspeed_undershoot(const math::Vector<2> &curr_pos, const math::Vector<2> &ground_speed,
+	void		calculate_gndspeed_undershoot(const Vector2f &curr_pos, const Vector2f &ground_speed,
 			const position_setpoint_s &pos_sp_prev, const position_setpoint_s &pos_sp_curr);
 
 	/**
 	 * Handle incoming vehicle commands
 	 */
 	void		handle_command();
-
-	/**
-	 * Shim for calling task_main from task_create.
-	 */
-	static void	task_main_trampoline(int argc, char *argv[]);
-
-	/**
-	 * Main sensor collection task.
-	 */
-	void		task_main();
 
 	void		reset_takeoff_state();
 	void		reset_landing_state();
@@ -473,10 +469,5 @@ private:
 					uint8_t mode = tecs_status_s::TECS_MODE_NORMAL);
 
 };
-
-namespace l1_control
-{
-extern FixedwingPositionControl *g_control;
-} // namespace l1_control
 
 #endif // FIXEDWINGPOSITIONCONTROL_HPP_

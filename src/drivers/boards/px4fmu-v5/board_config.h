@@ -236,15 +236,6 @@
 #define BOARD_NUMBER_I2C_BUSES  4
 #define BOARD_I2C_BUS_CLOCK_INIT {100000, 100000, 100000, 100000}
 
-/* Devices on the external bus.
- *
- * Note that these are unshifted addresses.
- */
-
-#define PX4_I2C_OBDEV_LED	    0x55
-#define PX4_I2C_OBDEV_HMC5883	0x1e
-#define PX4_I2C_OBDEV_LIS3MDL	0x1e
-
 /*
  * ADC channels
  *
@@ -321,6 +312,12 @@
 	 (1 << ADC_HW_REV_SENSE_CHANNEL)           | \
 	 (1 << ADC1_SPARE_1_CHANNEL))
 #endif
+
+/* Define Battery 1 Voltage Divider and A per V
+ */
+
+#define BOARD_BATTERY1_V_DIV         (10.133333333f)
+#define BOARD_BATTERY1_A_PER_V       (36.367515152f)
 
 /* HW has to large of R termination on ADC todo:change when HW value is chosen */
 

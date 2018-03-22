@@ -54,8 +54,8 @@
 #include <uORB/topics/vehicle_command.h>
 #include <uORB/topics/vtol_vehicle_status.h>
 
-MissionBlock::MissionBlock(Navigator *navigator, const char *name) :
-	NavigatorMode(navigator, name)
+MissionBlock::MissionBlock(Navigator *navigator) :
+	NavigatorMode(navigator)
 {
 }
 
@@ -86,6 +86,9 @@ MissionBlock::is_mission_item_reached()
 	case NAV_CMD_DO_MOUNT_CONFIGURE:
 	case NAV_CMD_DO_MOUNT_CONTROL:
 	case NAV_CMD_DO_SET_ROI:
+	case NAV_CMD_DO_SET_ROI_LOCATION:
+	case NAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+	case NAV_CMD_DO_SET_ROI_NONE:
 	case NAV_CMD_DO_SET_CAM_TRIGG_DIST:
 	case NAV_CMD_DO_SET_CAM_TRIGG_INTERVAL:
 	case NAV_CMD_SET_CAMERA_MODE:
@@ -448,7 +451,13 @@ MissionBlock::issue_command(const mission_item_s &item)
 		vcmd.param4 = item.params[3];
 		vcmd.param5 = item.params[4];
 		vcmd.param6 = item.params[5];
-		vcmd.param7 = item.params[6];
+
+		if (item.nav_cmd == NAV_CMD_DO_SET_ROI_LOCATION && item.altitude_is_relative) {
+			vcmd.param7 = item.params[6] + _navigator->get_home_position()->alt;
+
+		} else {
+			vcmd.param7 = item.params[6];
+		}
 
 		_navigator->publish_vehicle_cmd(&vcmd);
 	}

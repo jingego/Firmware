@@ -40,41 +40,13 @@
  */
 
 /**
- * Roll time constant
- *
- * Reduce if the system is too twitchy, increase if the response is too slow and sluggish.
- *
- * @unit s
- * @min 0.15
- * @max 0.25
- * @decimal 2
- * @increment 0.01
- * @group Multicopter Attitude Control
- */
-PARAM_DEFINE_FLOAT(MC_ROLL_TC, 0.2f);
-
-/**
- * Pitch time constant
- *
- * Reduce if the system is too twitchy, increase if the response is too slow and sluggish.
- *
- * @unit s
- * @min 0.15
- * @max 0.25
- * @decimal 2
- * @increment 0.01
- * @group Multicopter Attitude Control
- */
-PARAM_DEFINE_FLOAT(MC_PITCH_TC, 0.2f);
-
-/**
  * Roll P gain
  *
  * Roll proportional gain, i.e. desired angular speed in rad/s for error 1 rad.
  *
  * @unit 1/s
  * @min 0.0
- * @max 8
+ * @max 12
  * @decimal 2
  * @increment 0.1
  * @group Multicopter Attitude Control
@@ -149,7 +121,7 @@ PARAM_DEFINE_FLOAT(MC_ROLLRATE_FF, 0.0f);
  *
  * @unit 1/s
  * @min 0.0
- * @max 10
+ * @max 12
  * @decimal 2
  * @increment 0.1
  * @group Multicopter Attitude Control
@@ -554,3 +526,20 @@ PARAM_DEFINE_FLOAT(MC_TPA_RATE_I, 0.0f);
  * @group Multicopter Attitude Control
  */
 PARAM_DEFINE_FLOAT(MC_TPA_RATE_D, 0.0f);
+
+/**
+ * Cutoff frequency for the low pass filter on the D-term in the rate controller
+ *
+ * The D-term uses the derivative of the rate and thus is the most susceptible to noise.
+ * Therefore, using a D-term filter allows to decrease the driver-level filtering, which
+ * leads to reduced control latency and permits to increase the P gains.
+ * A value of 0 disables the filter.
+ *
+ * @unit Hz
+ * @min 0
+ * @max 1000
+ * @decimal 0
+ * @increment 10
+ * @group Multicopter Attitude Control
+ */
+PARAM_DEFINE_FLOAT(MC_DTERM_CUTOFF, 30.f);

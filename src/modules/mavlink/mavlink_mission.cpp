@@ -530,20 +530,6 @@ MavlinkMissionManager::send(const hrt_abstime now)
 		// try to request item again after timeout
 		send_mission_request(_transfer_partner_sysid, _transfer_partner_compid, _transfer_seq);
 
-	} else if (_state == MAVLINK_WPM_STATE_SENDLIST && (_time_last_sent > 0)
-		   && hrt_elapsed_time(&_time_last_sent) > MAVLINK_MISSION_RETRY_TIMEOUT_DEFAULT) {
-
-		if (_transfer_seq == 0) {
-			/* try to send items count again after timeout */
-			send_mission_count(_transfer_partner_sysid, _transfer_partner_compid, _transfer_count, _mission_type);
-
-		} else {
-			/* try to send item again after timeout */
-			PX4_DEBUG("WPM: item re-send timeout");
-
-			send_mission_item(_transfer_partner_sysid, _transfer_partner_compid, _transfer_seq - 1);
-		}
-
 	} else if (_state != MAVLINK_WPM_STATE_IDLE && (_time_last_recv > 0)
 		   && hrt_elapsed_time(&_time_last_recv) > MAVLINK_MISSION_PROTOCOL_TIMEOUT_DEFAULT) {
 
@@ -634,12 +620,20 @@ MavlinkMissionManager::handle_mission_ack(const mavlink_message_t *msg)
 
 			} else if (_state == MAVLINK_WPM_STATE_GETLIST) {
 
-				// INT mode is not supported
-				if (_int_mode && wpa.type != MAV_MISSION_ACCEPTED) {
-					_int_mode = false;
+				// INT or float mode is not supported
+				if (wpa.type == MAV_MISSION_UNSUPPORTED) {
+
+					if (_int_mode) {
+						_int_mode = false;
+						send_mission_request(_transfer_partner_sysid, _transfer_partner_compid, _transfer_seq);
+
+					} else {
+						_int_mode = true;
+						send_mission_request(_transfer_partner_sysid, _transfer_partner_compid, _transfer_seq);
+					}
 
 				} else if (wpa.type != MAV_MISSION_ACCEPTED) {
-					_int_mode = true;
+					PX4_WARN("Mission ack result was %d", wpa.type);
 				}
 			}
 
@@ -942,6 +936,8 @@ MavlinkMissionManager::handle_mission_count(const mavlink_message_t *msg)
 				PX4_DEBUG("WPM: MISSION_COUNT ERROR: busy, already receiving seq %u", _transfer_seq);
 
 				_mavlink->send_statustext_critical("WPM: REJ. CMD: Busy");
+
+				send_mission_ack(_transfer_partner_sysid, _transfer_partner_compid, MAV_MISSION_ERROR);
 				return;
 			}
 
@@ -949,6 +945,7 @@ MavlinkMissionManager::handle_mission_count(const mavlink_message_t *msg)
 			PX4_DEBUG("WPM: MISSION_COUNT ERROR: busy, state %i", _state);
 
 			_mavlink->send_statustext_critical("WPM: IGN MISSION_COUNT: Busy");
+			send_mission_ack(_transfer_partner_sysid, _transfer_partner_compid, MAV_MISSION_ERROR);
 			return;
 		}
 
@@ -1007,7 +1004,8 @@ MavlinkMissionManager::handle_mission_item_both(const mavlink_message_t *msg)
 	if (CHECK_SYSID_COMPID_MISSION(wp)) {
 
 		if (wp.mission_type != _mission_type) {
-			PX4_WARN("WPM: Unexpected mission type (%u %u)", wp.mission_type, _mission_type);
+			PX4_WARN("WPM: Unexpected mission type (%u %u)", (int)wp.mission_type, (int)_mission_type);
+			send_mission_ack(_transfer_partner_sysid, _transfer_partner_compid, MAV_MISSION_ERROR);
 			return;
 		}
 
@@ -1017,7 +1015,8 @@ MavlinkMissionManager::handle_mission_item_both(const mavlink_message_t *msg)
 			if (wp.seq != _transfer_seq) {
 				PX4_DEBUG("WPM: MISSION_ITEM ERROR: seq %u was not the expected %u", wp.seq, _transfer_seq);
 
-				/* don't send request here, it will be performed in eventloop after timeout */
+				/* request next item again */
+				send_mission_request(_transfer_partner_sysid, _transfer_partner_compid, _transfer_seq);
 				return;
 			}
 
@@ -1025,12 +1024,14 @@ MavlinkMissionManager::handle_mission_item_both(const mavlink_message_t *msg)
 			PX4_DEBUG("WPM: MISSION_ITEM ERROR: no transfer");
 
 			_mavlink->send_statustext_critical("IGN MISSION_ITEM: No transfer");
+			send_mission_ack(_transfer_partner_sysid, _transfer_partner_compid, MAV_MISSION_ERROR);
 			return;
 
 		} else {
 			PX4_DEBUG("WPM: MISSION_ITEM ERROR: busy, state %i", _state);
 
 			_mavlink->send_statustext_critical("IGN MISSION_ITEM: Busy");
+			send_mission_ack(_transfer_partner_sysid, _transfer_partner_compid, MAV_MISSION_ERROR);
 			return;
 		}
 
@@ -1352,10 +1353,21 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 				mission_item->params[5] = mavlink_mission_item->y;
 				mission_item->params[6] = mavlink_mission_item->z;
 
+			} else if ((int)mavlink_mission_item->param1 == MAV_ROI_NONE) {
+				mission_item->nav_cmd = NAV_CMD_DO_SET_ROI;
+				mission_item->params[0] = MAV_ROI_NONE;
+
 			} else {
 				return MAV_MISSION_INVALID_PARAM1;
 			}
 
+			break;
+
+		case MAV_CMD_DO_SET_ROI_LOCATION:
+			mission_item->nav_cmd = NAV_CMD_DO_SET_ROI_LOCATION;
+			mission_item->params[4] = mavlink_mission_item->x;
+			mission_item->params[5] = mavlink_mission_item->y;
+			mission_item->params[6] = mavlink_mission_item->z;
 			break;
 
 		case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -1445,6 +1457,8 @@ MavlinkMissionManager::parse_mavlink_mission_item(const mavlink_mission_item_t *
 		case MAV_CMD_DO_VTOL_TRANSITION:
 		case MAV_CMD_NAV_DELAY:
 		case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+		case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+		case MAV_CMD_DO_SET_ROI_NONE:
 			mission_item->nav_cmd = (NAV_CMD)mavlink_mission_item->command;
 			break;
 

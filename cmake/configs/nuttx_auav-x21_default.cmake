@@ -11,32 +11,31 @@ set(config_module_list
 	drivers/differential_pressure
 	drivers/distance_sensor
 	drivers/magnetometer
+	drivers/telemetry
 
+	drivers/airspeed
+	drivers/batt_smbus
+	drivers/blinkm
+	drivers/boards
+	drivers/camera_trigger
 	drivers/device
+	drivers/gps
+	drivers/led
+	drivers/mkblctrl
+	drivers/imu/mpu6000
+	drivers/imu/mpu9250
+	drivers/oreoled
+	drivers/pwm_input
+	drivers/pwm_out_sim
+	drivers/px4flow
+	drivers/px4fmu
+	drivers/px4io
+	drivers/rgbled
 	drivers/stm32
 	drivers/stm32/adc
 	drivers/stm32/tone_alarm
-	drivers/led
-	drivers/px4fmu
-	drivers/px4io
-	drivers/boards
-	drivers/rgbled
-	drivers/mpu6000
-	drivers/mpu9250
-	drivers/gps
-	drivers/pwm_out_sim
-	drivers/hott
-	drivers/blinkm
-	drivers/airspeed
-	drivers/frsky_telemetry
-	modules/sensors
-	drivers/mkblctrl
-	drivers/px4flow
-	drivers/oreoled
 	drivers/vmount
-	drivers/pwm_input
-	drivers/camera_trigger
-	drivers/bst
+	modules/sensors
 
 	#
 	# System commands
@@ -58,6 +57,7 @@ set(config_module_list
 	systemcmds/sd_bench
 	systemcmds/top
 	systemcmds/topic_listener
+	systemcmds/tune_control
 	systemcmds/ver
 
 	#
@@ -90,6 +90,7 @@ set(config_module_list
 	modules/attitude_estimator_q
 	modules/position_estimator_inav
 	modules/local_position_estimator
+	modules/landing_target_estimator
 	modules/ekf2
 
 	#
@@ -126,20 +127,12 @@ set(config_module_list
 	lib/ecl
 	lib/geo
 	lib/geo_lookup
-	lib/launchdetection
 	lib/led
 	lib/mathlib
-	lib/mathlib/math/filter
 	lib/mixer
-	lib/runway_takeoff
-	lib/tailsitter_recovery
 	lib/terrain_estimation
+	lib/tunes
 	lib/version
-	platforms/nuttx
-
-	# had to add for cmake, not sure why wasn't in original config
-	platforms/common
-	platforms/nuttx/px4_layer
 
 	#
 	# OBC challenge
@@ -158,10 +151,6 @@ set(config_module_list
 	# Tutorial code from
 	# https://px4.io/dev/px4_simple_app
 	#examples/px4_simple_app
-
-	# Tutorial code from
-	# https://px4.io/dev/daemon
-	#examples/px4_daemon_app
 
 	# Tutorial code from
 	# https://px4.io/dev/debug_values

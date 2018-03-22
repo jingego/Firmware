@@ -553,7 +553,7 @@ protected:
 			msg.load = cpuload.load * 1000.0f;
 			msg.voltage_battery = (battery_status.connected) ? battery_status.voltage_filtered_v * 1000.0f : UINT16_MAX;
 			msg.current_battery = (battery_status.connected) ? battery_status.current_filtered_a * 100.0f : -1;
-			msg.battery_remaining = (battery_status.connected) ? battery_status.remaining * 100.0f : -1;
+			msg.battery_remaining = (battery_status.connected) ? ceilf(battery_status.remaining * 100.0f) : -1;
 			// TODO: fill in something useful in the fields below
 			msg.drop_rate_comm = 0;
 			msg.errors_comm = 0;
@@ -572,8 +572,14 @@ protected:
 			bat_msg.current_consumed = (battery_status.connected) ? battery_status.discharged_mah : -1;
 			bat_msg.energy_consumed = -1;
 			bat_msg.current_battery = (battery_status.connected) ? battery_status.current_filtered_a * 100 : -1;
-			bat_msg.battery_remaining = (battery_status.connected) ? battery_status.remaining * 100.0f : -1;
-			bat_msg.temperature = INT16_MAX;
+			bat_msg.battery_remaining = (battery_status.connected) ? ceilf(battery_status.remaining * 100.0f) : -1;
+			bat_msg.temperature = (battery_status.connected) ? (int16_t)battery_status.temperature : INT16_MAX;
+			//bat_msg.average_current_battery = (battery_status.connected) ? battery_status.average_current_a * 100.0f : -1;
+			//bat_msg.serial_number = (battery_status.connected) ? battery_status.serial_number : 0;
+			//bat_msg.capacity = (battery_status.connected) ? battery_status.capacity : 0;
+			//bat_msg.cycle_count = (battery_status.connected) ? battery_status.cycle_count : UINT16_MAX;
+			//bat_msg.run_time_to_empty = (battery_status.connected) ? battery_status.run_time_to_empty * 60 : 0;
+			//bat_msg.average_time_to_empty = (battery_status.connected) ? battery_status.average_time_to_empty * 60 : 0;
 
 			for (unsigned int i = 0; i < (sizeof(bat_msg.voltages) / sizeof(bat_msg.voltages[0])); i++) {
 				if ((int)i < battery_status.cell_count && battery_status.connected) {
@@ -1225,9 +1231,14 @@ protected:
 		msg.time_boot_ms = hrt_absolute_time() / 1000;
 		msg.time_unix_usec = (uint64_t)tv.tv_sec * 1000000 + tv.tv_nsec / 1000;
 
-		mavlink_msg_system_time_send_struct(_mavlink->get_channel(), &msg);
+		// If the time is before 2001-01-01, it's probably the default 2000
+		// and we don't need to bother sending it because it's definitely wrong.
+		if (msg.time_unix_usec > 978307200000000) {
+			mavlink_msg_system_time_send_struct(_mavlink->get_channel(), &msg);
+			return true;
+		}
 
-		return true;
+		return false;
 	}
 };
 
@@ -1346,6 +1357,8 @@ protected:
 		while (_pos_sub->update(&_pos_time, &pos)) {
 			mavlink_adsb_vehicle_t msg = {};
 
+			if (!(pos.flags & transponder_report_s::PX4_ADSB_FLAGS_RETRANSLATE)) { continue; }
+
 			msg.ICAO_address = pos.ICAO_address;
 			msg.lat = pos.lat * 1e7;
 			msg.lon = pos.lon * 1e7;
@@ -1357,8 +1370,21 @@ protected:
 			memcpy(&msg.callsign[0], &pos.callsign[0], sizeof(msg.callsign));
 			msg.emitter_type = pos.emitter_type;
 			msg.tslc = pos.tslc;
-			msg.flags = pos.flags;
 			msg.squawk = pos.squawk;
+
+			msg.flags = 0;
+
+			if (pos.flags & transponder_report_s::PX4_ADSB_FLAGS_VALID_COORDS) { msg.flags |= ADSB_FLAGS_VALID_COORDS; }
+
+			if (pos.flags & transponder_report_s::PX4_ADSB_FLAGS_VALID_ALTITUDE) { msg.flags |= ADSB_FLAGS_VALID_ALTITUDE; }
+
+			if (pos.flags & transponder_report_s::PX4_ADSB_FLAGS_VALID_HEADING) { msg.flags |= ADSB_FLAGS_VALID_HEADING; }
+
+			if (pos.flags & transponder_report_s::PX4_ADSB_FLAGS_VALID_VELOCITY) { msg.flags |= ADSB_FLAGS_VALID_VELOCITY; }
+
+			if (pos.flags & transponder_report_s::PX4_ADSB_FLAGS_VALID_CALLSIGN) { msg.flags |= ADSB_FLAGS_VALID_CALLSIGN; }
+
+			if (pos.flags & transponder_report_s::PX4_ADSB_FLAGS_VALID_SQUAWK) { msg.flags |= ADSB_FLAGS_VALID_SQUAWK; }
 
 			mavlink_msg_adsb_vehicle_send_struct(_mavlink->get_channel(), &msg);
 			sent = true;
@@ -1782,11 +1808,11 @@ protected:
 			vmsg.x = vpos.x;
 			vmsg.y = vpos.y;
 			vmsg.z = vpos.z;
-			math::Quaternion q(vatt.q);
-			math::Vector<3> rpy = q.to_euler();
-			vmsg.roll = rpy(0);
-			vmsg.pitch = rpy(1);
-			vmsg.yaw = rpy(2);
+
+			matrix::Eulerf euler = matrix::Quatf(vatt.q);
+			vmsg.roll = euler.phi();
+			vmsg.pitch = euler.theta();
+			vmsg.yaw = euler.psi();
 
 			mavlink_msg_vision_position_estimate_send_struct(_mavlink->get_channel(), &vmsg);
 		}
@@ -3705,7 +3731,7 @@ protected:
 		_msg()
 	{
 		_msg.vtol_state = MAV_VTOL_STATE_UNDEFINED;
-		_msg.landed_state = MAV_LANDED_STATE_UNDEFINED;
+		_msg.landed_state = MAV_LANDED_STATE_ON_GROUND;
 	}
 
 	bool send(const hrt_abstime t)
@@ -3755,9 +3781,6 @@ protected:
 						}
 					}
 				}
-
-			} else {
-				_msg.landed_state = MAV_LANDED_STATE_UNDEFINED;
 			}
 		}
 

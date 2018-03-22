@@ -1362,6 +1362,8 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 			// TODO provide calculated values for these
 			local_pos.evh = 0.0f;
 			local_pos.evv = 0.0f;
+			local_pos.vxy_max = 0.0f;
+			local_pos.limit_hagl = false;
 
 			// this estimator does not provide a separate vertical position time derivative estimate, so use the vertical velocity
 			local_pos.z_deriv = z_est[1];
@@ -1390,17 +1392,10 @@ int position_estimator_inav_thread_main(int argc, char *argv[])
 				global_pos.vel_e = local_pos.vy;
 				global_pos.vel_d = local_pos.vz;
 
-				// this estimator does not provide a separate vertical position time derivative estimate, so use the vertical velocity
-				global_pos.pos_d_deriv = local_pos.vz;
-
 				global_pos.yaw = local_pos.yaw;
 
 				global_pos.eph = eph;
 				global_pos.epv = epv;
-
-				// TODO provide calculated values for these
-				global_pos.evh = 0.0f;
-				global_pos.evv = 0.0f;
 
 				if (terrain_estimator.is_valid()) {
 					global_pos.terrain_alt = global_pos.alt - terrain_estimator.get_distance_to_ground();

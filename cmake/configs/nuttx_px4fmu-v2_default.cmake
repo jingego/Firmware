@@ -8,15 +8,15 @@ set(config_module_list
 	#
 	#drivers/barometer
 	drivers/differential_pressure
-	drivers/distance_sensor
 	#drivers/magnetometer
+	#drivers/telemetry
 
-	#drivers/adis16448
+	#drivers/imu/adis16448
 	drivers/airspeed
 	drivers/barometer/ms5611
 	#drivers/blinkm
-	#drivers/bmi160
-	#drivers/bmp280
+	#drivers/imu/bmi160
+	#drivers/barometer/bmp280
 	drivers/boards
 	#drivers/bst
 	drivers/camera_trigger
@@ -26,19 +26,19 @@ set(config_module_list
 	#drivers/hott
 	#drivers/iridiumsbd
 	#drivers/irlock
-	drivers/l3gd20
+	drivers/imu/l3gd20
 	drivers/led
-	drivers/lsm303d
+	drivers/imu/lsm303d
 	drivers/magnetometer/hmc5883
 	drivers/magnetometer/lis3mdl
 	#drivers/mb12xx
 	#drivers/mkblctrl
-	drivers/mpu6000
-	drivers/mpu9250
+	drivers/imu/mpu6000
+	drivers/imu/mpu9250
 	#drivers/oreoled
 	#drivers/protocol_splitter
 	drivers/pwm_input
-	drivers/pwm_out_sim
+	#drivers/pwm_out_sim
 	drivers/px4flow
 	drivers/px4fmu
 	drivers/px4io
@@ -48,6 +48,17 @@ set(config_module_list
 	drivers/stm32/tone_alarm
 	#drivers/tap_esc
 	drivers/vmount
+
+	# distance sensors
+	drivers/distance_sensor/ll40ls
+	drivers/distance_sensor/mb12xx
+	drivers/distance_sensor/sf0x
+	drivers/distance_sensor/sf1xx
+	drivers/distance_sensor/srf02
+	drivers/distance_sensor/srf02_i2c
+	drivers/distance_sensor/teraranger
+	drivers/distance_sensor/tfmini
+	#drivers/distance_sensor/ulanding
 	modules/sensors
 
 	#
@@ -71,6 +82,7 @@ set(config_module_list
 	#systemcmds/sd_bench
 	systemcmds/top
 	#systemcmds/topic_listener
+	systemcmds/tune_control
 	systemcmds/ver
 
 	#
@@ -107,6 +119,7 @@ set(config_module_list
 	#modules/local_position_estimator
 	#modules/position_estimator_inav
 	#modules/landing_target_estimator
+	#modules/wind_estimator
 
 	#
 	# Vehicle Control
@@ -142,22 +155,12 @@ set(config_module_list
 	lib/ecl
 	lib/geo
 	lib/geo_lookup
-	lib/launchdetection
 	lib/led
 	lib/mathlib
-	lib/mathlib/math/filter
 	lib/mixer
-	lib/runway_takeoff
-	lib/tailsitter_recovery
 	#lib/terrain_estimation
+	lib/tunes
 	lib/version
-
-	#
-	# Platform
-	#
-	platforms/common
-	platforms/nuttx
-	platforms/nuttx/px4_layer
 
 	#
 	# OBC challenge
@@ -181,10 +184,6 @@ set(config_module_list
 	# Tutorial code from
 	# https://px4.io/dev/px4_simple_app
 	#examples/px4_simple_app
-
-	# Tutorial code from
-	# https://px4.io/dev/daemon
-	#examples/px4_daemon_app
 
 	# Tutorial code from
 	# https://px4.io/dev/debug_values
