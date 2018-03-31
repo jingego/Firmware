@@ -19,6 +19,7 @@ set(config_module_list
 	drivers/imu/mpu9250
 	drivers/px4fmu
 	drivers/stm32
+	drivers/pwm_out_sim
 	drivers/tap_esc
 	modules/sensors
 
@@ -81,8 +82,6 @@ set(config_module_list
 	lib/conversion
 	lib/DriverFramework/framework
 	lib/ecl
-	lib/geo
-	lib/geo_lookup
 	lib/mathlib
 	lib/mixer
 	lib/rc

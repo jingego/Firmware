@@ -2,6 +2,17 @@ pipeline {
   agent none
   stages {
 
+    stage('Style Check') {
+      agent {
+        docker { image 'px4io/px4-dev-base:2018-03-30' }
+      }
+
+      steps {
+        sh 'make submodulesclean'
+        sh 'make check_format'
+      }
+    }
+
     stage('Build') {
       steps {
         script {
@@ -15,7 +26,7 @@ pipeline {
             builds["${node_name}"] = {
               node {
                 stage("Build Test ${node_name}") {
-                  docker.image('px4io/px4-dev-nuttx:2017-12-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
+                  docker.image('px4io/px4-dev-nuttx:2018-03-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
                     stage("${node_name}") {
                       checkout scm
                       sh "export"
@@ -23,8 +34,11 @@ pipeline {
                       sh "ccache -z"
                       sh "git fetch --tags"
                       sh "make nuttx_${node_name}_default"
-                      sh "bloaty -n 100 -d symbols -s file `find . -name *.elf`"
-                      sh "bloaty -n 100 -d compileunits -s file `find . -name *.elf`"
+                      // bloaty output and compare with last successful master
+                      sh "bloaty -n 100 -d symbols -s file build/nuttx_${node_name}_default/nuttx_${node_name}_default.elf"
+                      sh "bloaty -n 100 -d compileunits -s file build/nuttx_${node_name}_default/nuttx_${node_name}_default.elf"
+                      sh "wget --no-verbose -N https://s3.amazonaws.com/px4-travis/Firmware/master/nuttx_${node_name}_default.elf"
+                      sh "bloaty -d symbols -C full -s file build/nuttx_${node_name}_default/nuttx_${node_name}_default.elf -- nuttx_${node_name}_default.elf"
                       sh "make nuttx_${node_name}_rtps"
                       sh "make sizes"
                       sh "ccache -s"
@@ -42,7 +56,7 @@ pipeline {
           builds["px4fmu-v2"] = {
             node {
               stage("Build Test ${node_name}") {
-                docker.image('px4io/px4-dev-nuttx:2017-12-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
+                docker.image('px4io/px4-dev-nuttx:2018-03-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
                   stage("${node_name}") {
                     checkout scm
                     sh "export"
@@ -51,8 +65,11 @@ pipeline {
                     sh "git fetch --tags"
                     sh "make px4io-v2_default"
                     sh "make nuttx_px4fmu-v2_default"
-                    sh "bloaty -n 100 -d symbols -s file `find . -name *.elf`"
-                    sh "bloaty -n 100 -d compileunits -s file `find . -name *.elf`"
+                    // bloaty output and compare with last successful master
+                    sh "bloaty -n 100 -d symbols -s file build/nuttx_px4fmu-v2_default/nuttx_px4fmu-v2_default.elf"
+                    sh "bloaty -n 100 -d compileunits -s file build/nuttx_px4fmu-v2_default/nuttx_px4fmu-v2_default.elf"
+                    sh "wget --no-verbose -N https://s3.amazonaws.com/px4-travis/Firmware/master/nuttx_px4fmu-v2_default.elf"
+                    sh "bloaty -d symbols -C full -s file build/nuttx_px4fmu-v2_default/nuttx_px4fmu-v2_default.elf -- nuttx_px4fmu-v2_default.elf"
                     sh "make nuttx_px4fmu-v2_lpe"
                     sh "make nuttx_px4fmu-v3_default"
                     sh "make nuttx_px4fmu-v3_rtps"
@@ -74,7 +91,7 @@ pipeline {
             builds["${node_name}"] = {
               node {
                 stage("Build Test ${node_name}") {
-                  docker.image('px4io/px4-dev-nuttx:2017-12-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
+                  docker.image('px4io/px4-dev-nuttx:2018-03-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
                     stage("${node_name}") {
                       checkout scm
                       sh "export"
@@ -101,7 +118,7 @@ pipeline {
             builds["${node_name}"] = {
               node {
                 stage("Build Test ${node_name}") {
-                  docker.image('px4io/px4-dev-nuttx:2017-12-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
+                  docker.image('px4io/px4-dev-nuttx:2018-03-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
                     stage("${node_name}") {
                       checkout scm
                       sh "export"
@@ -125,7 +142,7 @@ pipeline {
             builds["${node_name}"] = {
               node {
                 stage("Build Test ${node_name}") {
-                  docker.image('px4io/px4-dev-base:2017-12-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
+                  docker.image('px4io/px4-dev-base:2018-03-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
                     stage("${node_name}") {
                       checkout scm
                       sh "export"
@@ -148,7 +165,7 @@ pipeline {
             builds["${node_name}"] = {
               node {
                 stage("Build Test ${node_name}") {
-                  docker.image('px4io/px4-dev-raspi:2017-12-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
+                  docker.image('px4io/px4-dev-raspi:2018-03-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
                     stage("${node_name}") {
                       checkout scm
                       sh "export"
@@ -219,7 +236,7 @@ pipeline {
             builds["${node_name} (GCC7)"] = {
               node {
                 stage("Build Test ${node_name} (GCC7)") {
-                  docker.image('px4io/px4-dev-base-archlinux:2017-12-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
+                  docker.image('px4io/px4-dev-base-archlinux:2018-03-30').inside('-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw') {
                     stage("${node_name}") {
                       checkout scm
                       sh "export"
@@ -242,23 +259,10 @@ pipeline {
     stage('Test') {
       parallel {
 
-        stage('check style') {
-          agent {
-            docker {
-              image 'px4io/px4-dev-base:2017-12-30'
-            }
-          }
-          steps {
-            sh 'export'
-            sh 'make distclean'
-            sh 'make check_format'
-          }
-        }
-
         stage('clang analyzer') {
           agent {
             docker {
-              image 'px4io/px4-dev-clang:2017-12-30'
+              image 'px4io/px4-dev-clang:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw'
             }
           }
@@ -289,7 +293,7 @@ pipeline {
         stage('clang tidy') {
           agent {
             docker {
-              image 'px4io/px4-dev-clang:2017-12-30'
+              image 'px4io/px4-dev-clang:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw'
             }
           }
@@ -334,7 +338,7 @@ pipeline {
         stage('tests') {
           agent {
             docker {
-              image 'px4io/px4-dev-base:2017-12-30'
+              image 'px4io/px4-dev-base:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw'
             }
           }
@@ -349,7 +353,7 @@ pipeline {
         stage('ROS vtol mission new 1') {
           agent {
             docker {
-              image 'px4io/px4-dev-ros:2017-12-31'
+              image 'px4io/px4-dev-ros:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
             }
           }
@@ -360,13 +364,15 @@ pipeline {
             sh 'make posix_sitl_default'
             sh 'make posix_sitl_default sitl_gazebo'
             sh './test/rostest_px4_run.sh mavros_posix_test_mission.test mission:=vtol_new_1 vehicle:=standard_vtol'
+            sh './Tools/ecl_ekf/process_logdata_ekf.py `find . -name *.ulg -print -quit`'
           }
           post {
-            success {
-              sh './Tools/upload_log.py -q --description "ROS mission test vtol_new_1: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            always {
+              sh './Tools/upload_log.py -q --description "${JOB_NAME}: ${STAGE_NAME}" --feedback "${JOB_NAME} ${CHANGE_TITLE} ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+              archiveArtifacts '.ros/**/*.pdf'
+              archiveArtifacts '.ros/**/*.csv'
             }
             failure {
-              sh './Tools/upload_log.py -q --description "ROS mission test vtol_new_1: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI --email "${CHANGE_AUTHOR_EMAIL}" .ros/rootfs/fs/microsd/log/*/*.ulg'
               archiveArtifacts '.ros/**/*.ulg'
               archiveArtifacts '.ros/**/rosunit-*.xml'
               archiveArtifacts '.ros/**/rostest-*.log'
@@ -377,7 +383,7 @@ pipeline {
         stage('ROS vtol mission new 2') {
           agent {
             docker {
-              image 'px4io/px4-dev-ros:2017-12-31'
+              image 'px4io/px4-dev-ros:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
             }
           }
@@ -388,13 +394,15 @@ pipeline {
             sh 'make posix_sitl_default'
             sh 'make posix_sitl_default sitl_gazebo'
             sh './test/rostest_px4_run.sh mavros_posix_test_mission.test mission:=vtol_new_2 vehicle:=standard_vtol'
+            sh './Tools/ecl_ekf/process_logdata_ekf.py `find . -name *.ulg -print -quit`'
           }
           post {
-            success {
-              sh './Tools/upload_log.py -q --description "ROS mission test vtol_new_2: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            always {
+              sh './Tools/upload_log.py -q --description "${JOB_NAME}: ${STAGE_NAME}" --feedback "${JOB_NAME} ${CHANGE_TITLE} ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+              archiveArtifacts '.ros/**/*.pdf'
+              archiveArtifacts '.ros/**/*.csv'
             }
             failure {
-              sh './Tools/upload_log.py -q --description "ROS mission test vtol_new_2: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI --email "${CHANGE_AUTHOR_EMAIL}" .ros/rootfs/fs/microsd/log/*/*.ulg'
               archiveArtifacts '.ros/**/*.ulg'
               archiveArtifacts '.ros/**/rosunit-*.xml'
               archiveArtifacts '.ros/**/rostest-*.log'
@@ -405,7 +413,7 @@ pipeline {
         stage('ROS vtol mission old 1') {
           agent {
             docker {
-              image 'px4io/px4-dev-ros:2017-12-31'
+              image 'px4io/px4-dev-ros:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
             }
           }
@@ -416,13 +424,15 @@ pipeline {
             sh 'make posix_sitl_default'
             sh 'make posix_sitl_default sitl_gazebo'
             sh './test/rostest_px4_run.sh mavros_posix_test_mission.test mission:=vtol_old_1 vehicle:=standard_vtol'
+            sh './Tools/ecl_ekf/process_logdata_ekf.py `find . -name *.ulg -print -quit`'
           }
           post {
-            success {
-              sh './Tools/upload_log.py -q --description "ROS mission test vtol_old_1: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            always {
+              sh './Tools/upload_log.py -q --description "${JOB_NAME}: ${STAGE_NAME}" --feedback "${JOB_NAME} ${CHANGE_TITLE} ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+              archiveArtifacts '.ros/**/*.pdf'
+              archiveArtifacts '.ros/**/*.csv'
             }
             failure {
-              sh './Tools/upload_log.py -q --description "ROS mission test vtol_old_1: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI --email "${CHANGE_AUTHOR_EMAIL}" .ros/rootfs/fs/microsd/log/*/*.ulg'
               archiveArtifacts '.ros/**/*.ulg'
               archiveArtifacts '.ros/**/rosunit-*.xml'
               archiveArtifacts '.ros/**/rostest-*.log'
@@ -433,7 +443,7 @@ pipeline {
         stage('ROS vtol mission old 2') {
           agent {
             docker {
-              image 'px4io/px4-dev-ros:2017-12-31'
+              image 'px4io/px4-dev-ros:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
             }
           }
@@ -444,13 +454,15 @@ pipeline {
             sh 'make posix_sitl_default'
             sh 'make posix_sitl_default sitl_gazebo'
             sh './test/rostest_px4_run.sh mavros_posix_test_mission.test mission:=vtol_old_2 vehicle:=standard_vtol'
+            sh './Tools/ecl_ekf/process_logdata_ekf.py `find . -name *.ulg -print -quit`'
           }
           post {
-            success {
-              sh './Tools/upload_log.py -q --description "ROS mission test vtol_old_2: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            always {
+              sh './Tools/upload_log.py -q --description "${JOB_NAME}: ${STAGE_NAME}" --feedback "${JOB_NAME} ${CHANGE_TITLE} ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+              archiveArtifacts '.ros/**/*.pdf'
+              archiveArtifacts '.ros/**/*.csv'
             }
             failure {
-              sh './Tools/upload_log.py -q --description "ROS mission test vtol_old_2: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI --email "${CHANGE_AUTHOR_EMAIL}" .ros/rootfs/fs/microsd/log/*/*.ulg'
               archiveArtifacts '.ros/**/*.ulg'
               archiveArtifacts '.ros/**/rosunit-*.xml'
               archiveArtifacts '.ros/**/rostest-*.log'
@@ -461,7 +473,7 @@ pipeline {
         stage('ROS vtol mission old 3') {
           agent {
             docker {
-              image 'px4io/px4-dev-ros:2017-12-31'
+              image 'px4io/px4-dev-ros:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
             }
           }
@@ -472,13 +484,15 @@ pipeline {
             //sh 'make posix_sitl_default'
             //sh 'make posix_sitl_default sitl_gazebo'
             //sh './test/rostest_px4_run.sh mavros_posix_test_mission.test mission:=vtol_old_3 vehicle:=standard_vtol'
+            //sh './Tools/ecl_ekf/process_logdata_ekf.py `find . -name *.ulg -print -quit`'
           }
           post {
-            //success {
-            //  sh './Tools/upload_log.py -q --description "ROS mission test vtol_old_3: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            //always {
+            //  sh './Tools/upload_log.py -q --description "${JOB_NAME}: ${STAGE_NAME}" --feedback "${JOB_NAME} ${CHANGE_TITLE} ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            //  archiveArtifacts '.ros/**/*.pdf'
+            //  archiveArtifacts '.ros/**/*.csv'
             //}
             failure {
-              //sh './Tools/upload_log.py -q --description "ROS mission test vtol_old_3: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI --email "${CHANGE_AUTHOR_EMAIL}" .ros/rootfs/fs/microsd/log/*/*.ulg'
               archiveArtifacts '.ros/**/*.ulg'
               archiveArtifacts '.ros/**/rosunit-*.xml'
               archiveArtifacts '.ros/**/rostest-*.log'
@@ -489,7 +503,7 @@ pipeline {
         stage('ROS MC mission box') {
           agent {
             docker {
-              image 'px4io/px4-dev-ros:2017-12-31'
+              image 'px4io/px4-dev-ros:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
             }
           }
@@ -500,13 +514,15 @@ pipeline {
             sh 'make posix_sitl_default'
             sh 'make posix_sitl_default sitl_gazebo'
             sh './test/rostest_px4_run.sh mavros_posix_test_mission.test mission:=multirotor_box vehicle:=iris'
+            sh './Tools/ecl_ekf/process_logdata_ekf.py `find . -name *.ulg -print -quit`'
           }
           post {
-            success {
-              sh './Tools/upload_log.py -q --description "ROS mission test multirotor_box: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            always {
+              sh './Tools/upload_log.py -q --description "${JOB_NAME}: ${STAGE_NAME}" --feedback "${JOB_NAME} ${CHANGE_TITLE} ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+              archiveArtifacts '.ros/**/*.pdf'
+              archiveArtifacts '.ros/**/*.csv'
             }
             failure {
-              sh './Tools/upload_log.py -q --description "ROS mission test multirotor_box: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI --email "${CHANGE_AUTHOR_EMAIL}" .ros/rootfs/fs/microsd/log/*/*.ulg'
               archiveArtifacts '.ros/**/*.ulg'
               archiveArtifacts '.ros/**/rosunit-*.xml'
               archiveArtifacts '.ros/**/rostest-*.log'
@@ -517,7 +533,7 @@ pipeline {
         stage('ROS offboard att') {
           agent {
             docker {
-              image 'px4io/px4-dev-ros:2017-12-31'
+              image 'px4io/px4-dev-ros:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
             }
           }
@@ -528,13 +544,15 @@ pipeline {
             sh 'make posix_sitl_default'
             sh 'make posix_sitl_default sitl_gazebo'
             sh './test/rostest_px4_run.sh mavros_posix_tests_offboard_attctl.test'
+            sh './Tools/ecl_ekf/process_logdata_ekf.py `find . -name *.ulg -print -quit`'
           }
           post {
-            success {
-              sh './Tools/upload_log.py -q --description "ROS offboard attitude test: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            always {
+              sh './Tools/upload_log.py -q --description "${JOB_NAME}: ${STAGE_NAME}" --feedback "${JOB_NAME} ${CHANGE_TITLE} ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+              archiveArtifacts '.ros/**/*.pdf'
+              archiveArtifacts '.ros/**/*.csv'
             }
             failure {
-              sh './Tools/upload_log.py -q --description "ROS offboard attitude test: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI --email "${CHANGE_AUTHOR_EMAIL}" .ros/rootfs/fs/microsd/log/*/*.ulg'
               archiveArtifacts '.ros/**/*.ulg'
               archiveArtifacts '.ros/**/rosunit-*.xml'
               archiveArtifacts '.ros/**/rostest-*.log'
@@ -545,7 +563,7 @@ pipeline {
         stage('ROS offboard pos') {
           agent {
             docker {
-              image 'px4io/px4-dev-ros:2017-12-31'
+              image 'px4io/px4-dev-ros:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
             }
           }
@@ -556,13 +574,15 @@ pipeline {
             sh 'make posix_sitl_default'
             sh 'make posix_sitl_default sitl_gazebo'
             sh './test/rostest_px4_run.sh mavros_posix_tests_offboard_posctl.test'
+            sh './Tools/ecl_ekf/process_logdata_ekf.py `find . -name *.ulg -print -quit`'
           }
           post {
-            success {
-              sh './Tools/upload_log.py -q --description "ROS offboard position test: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+            always {
+              sh './Tools/upload_log.py -q --description "${JOB_NAME}: ${STAGE_NAME}" --feedback "${JOB_NAME} ${CHANGE_TITLE} ${CHANGE_URL}" --source CI .ros/rootfs/fs/microsd/log/*/*.ulg'
+              archiveArtifacts '.ros/**/*.pdf'
+              archiveArtifacts '.ros/**/*.csv'
             }
             failure {
-              sh './Tools/upload_log.py -q --description "ROS offboard position test: ${CHANGE_ID}" --feedback "${CHANGE_TITLE} - ${CHANGE_URL}" --source CI --email "${CHANGE_AUTHOR_EMAIL}" .ros/rootfs/fs/microsd/log/*/*.ulg'
               archiveArtifacts '.ros/**/*.ulg'
               archiveArtifacts '.ros/**/rosunit-*.xml'
               archiveArtifacts '.ros/**/rostest-*.log'
@@ -579,7 +599,7 @@ pipeline {
 
         stage('airframe') {
           agent {
-            docker { image 'px4io/px4-dev-base:2017-12-30' }
+            docker { image 'px4io/px4-dev-base:2018-03-30' }
           }
           steps {
             sh 'make distclean'
@@ -590,7 +610,7 @@ pipeline {
 
         stage('parameter') {
           agent {
-            docker { image 'px4io/px4-dev-base:2017-12-30' }
+            docker { image 'px4io/px4-dev-base:2018-03-30' }
           }
           steps {
             sh 'make distclean'
@@ -601,7 +621,7 @@ pipeline {
 
         stage('module') {
           agent {
-            docker { image 'px4io/px4-dev-base:2017-12-30' }
+            docker { image 'px4io/px4-dev-base:2018-03-30' }
           }
           steps {
             sh 'make distclean'
@@ -613,7 +633,7 @@ pipeline {
         stage('uorb graphs') {
           agent {
             docker {
-              image 'px4io/px4-dev-nuttx:2017-12-30'
+              image 'px4io/px4-dev-nuttx:2018-03-30'
               args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw'
             }
           }
@@ -629,7 +649,7 @@ pipeline {
 
     stage('S3 Upload') {
       agent {
-        docker { image 'px4io/px4-dev-base:2017-12-30' }
+        docker { image 'px4io/px4-dev-base:2018-03-30' }
       }
 
       when {
@@ -650,7 +670,7 @@ pipeline {
     CI = true
   }
   options {
-    buildDiscarder(logRotator(numToKeepStr: '5'))
+    buildDiscarder(logRotator(numToKeepStr: '2', artifactDaysToKeepStr: '30'))
     timeout(time: 60, unit: 'MINUTES')
   }
 }
