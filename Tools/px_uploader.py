@@ -191,8 +191,11 @@ class uploader(object):
     MAVLINK_REBOOT_ID0 = bytearray(b'\xfe\x21\x45\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x00\x00\x00\xcc\x37')
 
     def __init__(self, portname, baudrate_bootloader, baudrate_flightstack):
-        # open the port, keep the default timeout short so we can poll quickly
-        self.port = serial.Serial(portname, baudrate_bootloader, timeout=0.5)
+        # Open the port, keep the default timeout short so we can poll quickly.
+        # On some systems writes can suddenly get stuck without having a
+        # write_timeout > 0 set.
+        self.port = serial.Serial(portname, baudrate_bootloader, timeout=0.5, write_timeout=0.5)
+        # self.port.write_timeout = 0.5
         self.otp = b''
         self.sn = b''
         self.baudrate_bootloader = baudrate_bootloader
@@ -230,7 +233,14 @@ class uploader(object):
 
     def __send(self, c):
         # print("send " + binascii.hexlify(c))
-        self.port.write(c)
+        while True:
+            try:
+                self.port.write(c)
+                break
+            except serial.SerialTimeoutException as e:
+                print("Write timeout (%s), trying again" % e)
+                time.sleep(0.04)
+                continue
 
     def __recv(self, count=1):
         c = self.port.read(count)
@@ -498,7 +508,7 @@ class uploader(object):
             for byte in range(0, 32*6, 4):
                 x = self.__getOTP(byte)
                 self.otp = self.otp + x
-                print(binascii.hexlify(x).decode('Latin-1') + ' ', end='')
+                #print(binascii.hexlify(x).decode('Latin-1') + ' ', end='')
             # see src/modules/systemlib/otp.h in px4 code:
             self.otp_id = self.otp[0:4]
             self.otp_idtype = self.otp[4:5]
@@ -507,11 +517,6 @@ class uploader(object):
             self.otp_coa = self.otp[32:160]
             # show user:
             try:
-                print("type: " + self.otp_id.decode('Latin-1'))
-                print("idtype: " + binascii.b2a_qp(self.otp_idtype).decode('Latin-1'))
-                print("vid: " + binascii.hexlify(self.otp_vid).decode('Latin-1'))
-                print("pid: " + binascii.hexlify(self.otp_pid).decode('Latin-1'))
-                print("coa: " + binascii.b2a_base64(self.otp_coa).decode('Latin-1'))
                 print("sn: ", end='')
                 for byte in range(0, 12, 4):
                     x = self.__getSN(byte)
@@ -520,6 +525,15 @@ class uploader(object):
                     print(binascii.hexlify(x).decode('Latin-1'), end='')  # show user
                 print('')
                 print("chip: %08x" % self.__getCHIP())
+
+                otp_id = self.otp_id.decode('Latin-1')
+                if ("PX4" in otp_id):
+                    print("OTP id: " + otp_id)
+                    print("OTP idtype: " + binascii.b2a_qp(self.otp_idtype).decode('Latin-1'))
+                    print("OTP vid: " + binascii.hexlify(self.otp_vid).decode('Latin-1'))
+                    print("OTP pid: " + binascii.hexlify(self.otp_pid).decode('Latin-1'))
+                    print("OTP coa: " + binascii.b2a_base64(self.otp_coa).decode('Latin-1'))
+
             except Exception:
                 # ignore bad character encodings
                 pass
@@ -530,7 +544,7 @@ class uploader(object):
             if (len(des) == 2):
                 print("family: %s" % des[0])
                 print("revision: %s" % des[1])
-                print("flash %d" % self.fw_maxsize)
+                print("flash: %d bytes" % self.fw_maxsize)
 
                 # Prevent uploads where the maximum image size of the board config is smaller than the flash
                 # of the board. This is a hint the user chose the wrong config and will lack features
@@ -555,7 +569,8 @@ class uploader(object):
                                    "high that it is not safe! If unsure, use px4fmu-v2_default.\n"
                                    "\n"
                                    "If you know you that the board does not have the silicon errata, use\n"
-                                   "this script with --force, or update the bootloader.\n")
+                                   "this script with --force, or update the bootloader. If you are invoking\n"
+                                   "upload using make, you can use force-upload target to force the upload.\n")
 
         self.__erase("Erase  ")
         self.__program("Program", fw)
@@ -636,7 +651,14 @@ def main():
 
     # Load the firmware file
     fw = firmware(args.firmware)
-    print("Loaded firmware for %x,%x, size: %d bytes, waiting for the bootloader..." % (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size')))
+
+    percent = fw.property('image_size') / fw.property('image_maxsize')
+    binary_size = float(fw.property('image_size'))
+    binary_max_size = float(fw.property('image_maxsize'))
+    percent = (binary_size / binary_max_size) * 100
+
+    print("Loaded firmware for board id: %s,%s size: %d bytes (%.2f%%), waiting for the bootloader..." % (fw.property('board_id'), fw.property('board_revision'), fw.property('image_size'), percent))
+    print()
 
     # tell any GCS that might be connected to the autopilot to give up
     # control of the serial port
@@ -667,7 +689,7 @@ def main():
             # on unix-like platforms use glob to support wildcard ports. This allows
             # the use of /dev/serial/by-id/usb-3D_Robotics on Linux, which prevents the upload from
             # causing modem hangups etc
-            if "linux" in _platform or "darwin" in _platform:
+            if "linux" in _platform or "darwin" in _platform or "cygwin" in _platform:
                 import glob
                 for pattern in patterns:
                     portlist += glob.glob(pattern)
@@ -690,6 +712,10 @@ def main():
                         # OS X, don't open Windows and Linux ports
                         if "COM" not in port and "ACM" not in port:
                             up = uploader(port, args.baud_bootloader, baud_flightstack)
+                    elif "cygwin" in _platform:
+                        # Cygwin, don't open native Windows COM and Linux ports
+                        if "COM" not in port and "ACM" not in port:
+                            up = uploader(port, args.baud_bootloader, baud_flightstack)
                     elif "win" in _platform:
                         # Windows, don't open POSIX ports
                         if "/" not in port:
@@ -710,7 +736,8 @@ def main():
                         # identify the bootloader
                         up.identify()
                         found_bootloader = True
-                        print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
+                        print()
+                        print("Found board id: %s,%s bootloader version: %s on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
                         break
 
                     except Exception:

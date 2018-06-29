@@ -43,7 +43,7 @@
 
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
-#include <systemlib/param/param.h>
+#include <parameters/param.h>
 
 #pragma once
 
@@ -64,8 +64,8 @@ public:
 
 	~PositionControl() {};
 
-	void updateState(const struct vehicle_local_position_s state, const matrix::Vector3f &vel_dot);
-	void updateSetpoint(struct vehicle_local_position_setpoint_s setpoint);
+	void updateState(const vehicle_local_position_s &state, const matrix::Vector3f &vel_dot);
+	void updateSetpoint(const vehicle_local_position_setpoint_s &setpoint);
 	void updateConstraints(const Controller::Constraints &constraints);
 	void generateThrustYawSetpoint(const float &dt);
 

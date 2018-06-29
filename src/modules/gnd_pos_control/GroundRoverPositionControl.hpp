@@ -52,8 +52,8 @@
 #include <ecl/l1/ecl_l1_pos_controller.h>
 #include <lib/ecl/geo/geo.h>
 #include <mathlib/mathlib.h>
-#include <systemlib/perf_counter.h>
-#include <systemlib/pid/pid.h>
+#include <perf/perf_counter.h>
+#include <pid/pid.h>
 #include <uORB/Subscription.hpp>
 #include <uORB/topics/fw_pos_ctrl_status.h>
 #include <uORB/topics/manual_control_setpoint.h>
@@ -202,7 +202,7 @@ private:
 	/**
 	 * Shim for calling task_main from task_create.
 	 */
-	static void	task_main_trampoline(int argc, char *argv[]);
+	static int	task_main_trampoline(int argc, char *argv[]);
 
 	/**
 	 * Main sensor collection task.

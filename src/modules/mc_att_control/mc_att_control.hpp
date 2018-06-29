@@ -34,7 +34,7 @@
 #include <lib/mixer/mixer.h>
 #include <mathlib/math/filter/LowPassFilter2p.hpp>
 #include <matrix/matrix/math.hpp>
-#include <systemlib/perf_counter.h>
+#include <perf/perf_counter.h>
 #include <px4_config.h>
 #include <px4_defines.h>
 #include <px4_module.h>
@@ -55,6 +55,7 @@
 #include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_rates_setpoint.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/vehicle_land_detected.h>
 
 /**
  * Multicopter attitude control app start / stop handling function
@@ -99,6 +100,7 @@ private:
 	void		battery_status_poll();
 	void		parameter_update_poll();
 	void		sensor_bias_poll();
+	void		vehicle_land_detected_poll();
 	void		sensor_correction_poll();
 	void		vehicle_attitude_poll();
 	void		vehicle_attitude_setpoint_poll();
@@ -136,6 +138,7 @@ private:
 	int		_sensor_gyro_sub[MAX_GYRO_COUNT];	/**< gyro data subscription */
 	int		_sensor_correction_sub{-1};	/**< sensor thermal correction subscription */
 	int		_sensor_bias_sub{-1};		/**< sensor in-run bias correction subscription */
+	int		_vehicle_land_detected_sub{-1};	/**< vehicle land detected subscription */
 
 	unsigned _gyro_count{1};
 	int _selected_gyro{0};
@@ -160,11 +163,11 @@ private:
 	struct sensor_gyro_s			_sensor_gyro {};	/**< gyro data before thermal correctons and ekf bias estimates are applied */
 	struct sensor_correction_s		_sensor_correction {};	/**< sensor thermal corrections */
 	struct sensor_bias_s			_sensor_bias {};	/**< sensor in-run bias corrections */
+	struct vehicle_land_detected_s		_vehicle_land_detected {};
 
 	MultirotorMixer::saturation_status _saturation_status{};
 
 	perf_counter_t	_loop_perf;			/**< loop performance counter */
-	perf_counter_t	_controller_latency_perf;
 
 	math::LowPassFilter2p _lp_filters_d[3];                      /**< low-pass filters for D-term (roll, pitch & yaw) */
 	static constexpr const float initial_update_rate_hz = 250.f; /**< loop update rate used for initialization */
@@ -220,8 +223,10 @@ private:
 		(ParamFloat<px4::params::MC_ACRO_R_MAX>) _acro_roll_max,
 		(ParamFloat<px4::params::MC_ACRO_P_MAX>) _acro_pitch_max,
 		(ParamFloat<px4::params::MC_ACRO_Y_MAX>) _acro_yaw_max,
-		(ParamFloat<px4::params::MC_ACRO_EXPO>) _acro_expo,				/**< function parameter for expo stick curve shape */
-		(ParamFloat<px4::params::MC_ACRO_SUPEXPO>) _acro_superexpo,			/**< function parameter for superexpo stick curve shape */
+		(ParamFloat<px4::params::MC_ACRO_EXPO>) _acro_expo_rp,				/**< expo stick curve shape (roll & pitch) */
+		(ParamFloat<px4::params::MC_ACRO_EXPO_Y>) _acro_expo_y,				/**< expo stick curve shape (yaw) */
+		(ParamFloat<px4::params::MC_ACRO_SUPEXPO>) _acro_superexpo_rp,			/**< superexpo stick curve shape (roll & pitch) */
+		(ParamFloat<px4::params::MC_ACRO_SUPEXPOY>) _acro_superexpo_y,			/**< superexpo stick curve shape (yaw) */
 
 		(ParamFloat<px4::params::MC_RATT_TH>) _rattitude_thres,
 

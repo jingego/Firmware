@@ -3,7 +3,7 @@
 # Standard startup script for sensor drivers.
 #
 
-if ver hwcmp AEROFC_V1
+if ver hwcmp AEROFC_V1 OMNIBUS_F4SD
 then
 	# Aero FC uses separate driver
 else
@@ -252,6 +252,11 @@ then
 
 	# I2C bypass of mpu
 	lps25h start
+
+	# Optical flow deck
+	vl53lxx start
+	pmw3901 start
+
 fi
 
 if ver hwcmp AEROFC_V1
@@ -265,6 +270,18 @@ then
 	ist8310 -C -b 1 -R 4 start
 	aerofc_adc start
 	ll40ls start i2c
+fi
+
+if ver hwcmp OMNIBUS_F4SD
+then
+	mpu6000 -R 12 -s start
+
+	# Possible external compasses
+	hmc5883 -X start
+
+	bmp280 start
+
+	adc start
 fi
 
 if ver hwcmp PX4FMU_V4PRO
@@ -326,11 +343,7 @@ if [ ${VEHICLE_TYPE} == fw -o ${VEHICLE_TYPE} == vtol ]
 then
 	if param compare CBRK_AIRSPD_CHK 0
 	then
-		if sdp3x_airspeed start
-		then
-		else
-			sdp3x_airspeed start -b 2
-		fi
+		sdp3x_airspeed start -a
 
 		# Pixhawk 2.1 has a MS5611 on I2C which gets wrongly
 		# detected as MS5525 because the chip manufacturer was so
@@ -340,20 +353,13 @@ then
 		then
 			ms5525_airspeed start -b 2
 		else
-			ms5525_airspeed start
+			ms5525_airspeed start -a
 		fi
 
-		if ms4525_airspeed start
-		then
-		else
-			ms4525_airspeed start -b 2
-		fi
+		ms4525_airspeed start -a
 
-		if ets_airspeed start
-		then
-		else
-			ets_airspeed start -b 1
-		fi
+		ets_airspeed start -a
+
 	fi
 fi
 

@@ -49,10 +49,11 @@
 
 #include <drivers/drv_pwm_output.h>
 #include <drivers/drv_hrt.h>
+
+#include <mixer/mixer.h>
+#include <pwm_limit/pwm_limit.h>
 #include <rc/sbus.h>
 
-#include <systemlib/pwm_limit/pwm_limit.h>
-#include <lib/mixer/mixer.h>
 #include <uORB/topics/actuator_controls.h>
 
 #include "mixer.h"
@@ -66,7 +67,6 @@ extern "C" {
  * Maximum interval in us before FMU signal is considered lost
  */
 #define FMU_INPUT_DROP_LIMIT_US		500000
-#define NAN_VALUE	(0.0f/0.0f)
 
 /* current servo arm/disarm state */
 static volatile bool mixer_servos_armed = false;
@@ -479,7 +479,7 @@ mixer_callback(uintptr_t handle,
 		     control_group == actuator_controls_s::GROUP_INDEX_ATTITUDE_ALTERNATE) &&
 		    control_index == actuator_controls_s::INDEX_THROTTLE) {
 			/* mark the throttle as invalid */
-			control = NAN_VALUE;
+			control = NAN;
 		}
 	}
 
