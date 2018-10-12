@@ -6,18 +6,19 @@ pipeline {
   parameters {
     choice(
       name: 'PX4_CMAKE_BUILD_TYPE',
-      choices: ['RelWithDebInfo', 'Coverage', 'AddressSanitizer'],
+      choices: ['RelWithDebInfo', 'Coverage', 'AddressSanitizer', 'UndefinedBehaviorSanitizer'],
       description: "CMake build type"
       )
   }
 
   stages {
+
     stage('Build') {
 
       agent {
         docker {
-          image 'px4io/px4-dev-ros:2018-08-23'
-          args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE'
+          image 'px4io/px4-dev-ros-kinetic:2018-09-11'
+          args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw -e HOME=$WORKSPACE --cap-add SYS_PTRACE'
         }
       }
 
@@ -28,6 +29,7 @@ pipeline {
             sh('export')
             sh('make distclean')
             sh "ccache -z"
+            sh "git fetch --tags"
             sh('make posix_sitl_default')
             sh "ccache -s"
           }
@@ -127,7 +129,7 @@ pipeline {
             ],
 
           ]
-        
+
           def test_nodes = [:]
           for (def i = 0; i < missions.size(); i++) {
             test_nodes.put(missions[i].name, createTestNode(missions[i]))
@@ -144,8 +146,8 @@ pipeline {
         stage('code coverage (python)') {
           agent {
             docker {
-              image 'px4io/px4-dev-base:2018-08-23'
-              args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw'
+              image 'px4io/px4-dev-base:2018-09-11'
+              args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw --cap-add SYS_PTRACE'
             }
           }
           steps {
@@ -167,8 +169,8 @@ pipeline {
         stage('unit tests') {
           agent {
             docker {
-              image 'px4io/px4-dev-base:2018-08-23'
-              args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw'
+              image 'px4io/px4-dev-base:2018-09-11'
+              args '-e CCACHE_BASEDIR=$WORKSPACE -v ${CCACHE_DIR}:${CCACHE_DIR}:rw --cap-add SYS_PTRACE'
             }
           }
           steps {
@@ -190,8 +192,11 @@ pipeline {
 
   } //stages
   environment {
+    ASAN_OPTIONS = 'detect_stack_use_after_return=1:check_initialization_order=1'
+    UBSAN_OPTIONS = 'print_stacktrace=1'
     CCACHE_DIR = '/tmp/ccache'
     CI = true
+    CTEST_OUTPUT_ON_FAILURE = 1
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactDaysToKeepStr: '30'))
@@ -203,7 +208,7 @@ def createTestNode(Map test_def) {
   return {
     node {
       cleanWs()
-      docker.image("px4io/px4-dev-ros:2018-08-23").inside('-e HOME=${WORKSPACE}') {
+      docker.image("px4io/px4-dev-ros-kinetic:2018-09-11").inside('-e HOME=${WORKSPACE} --cap-add SYS_PTRACE') {
         stage(test_def.name) {
 
           try {
