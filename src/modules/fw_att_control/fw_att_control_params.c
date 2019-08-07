@@ -109,7 +109,7 @@ PARAM_DEFINE_FLOAT(FW_PR_P, 0.08f);
  * @increment 0.005
  * @group FW Attitude Control
  */
-PARAM_DEFINE_FLOAT(FW_PR_I, 0.02f);
+PARAM_DEFINE_FLOAT(FW_PR_I, 0.1f);
 
 /**
  * Maximum positive / up pitch rate.
@@ -183,7 +183,7 @@ PARAM_DEFINE_FLOAT(FW_RR_P, 0.05f);
  * @increment 0.005
  * @group FW Attitude Control
  */
-PARAM_DEFINE_FLOAT(FW_RR_I, 0.01f);
+PARAM_DEFINE_FLOAT(FW_RR_I, 0.1f);
 
 /**
  * Roll integrator anti-windup
@@ -241,7 +241,7 @@ PARAM_DEFINE_FLOAT(FW_YR_P, 0.05f);
  * @increment 0.5
  * @group FW Attitude Control
  */
-PARAM_DEFINE_FLOAT(FW_YR_I, 0.01f);
+PARAM_DEFINE_FLOAT(FW_YR_I, 0.1f);
 
 /**
  * Yaw rate integrator limit
@@ -498,6 +498,20 @@ PARAM_DEFINE_FLOAT(FW_FLAPS_SCL, 1.0f);
  * @group FW Attitude Control
  */
 PARAM_DEFINE_FLOAT(FW_FLAPS_TO_SCL, 0.0f);
+
+/**
+ * Flaps setting during landing
+ *
+ * Sets a fraction of full flaps (FW_FLAPS_SCL) during landing
+ *
+ * @unit norm
+ * @min 0.0
+ * @max 1.0
+ * @decimal 2
+ * @increment 0.01
+ * @group FW Attitude Control
+ */
+PARAM_DEFINE_FLOAT(FW_FLAPS_LND_SCL, 1.0f);
 
 /**
  * Scale factor for flaperons

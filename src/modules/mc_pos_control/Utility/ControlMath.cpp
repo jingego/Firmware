@@ -57,8 +57,7 @@ vehicle_attitude_setpoint_s thrustToAttitude(const Vector3f &thr_sp, const float
 
 	} else {
 		// no thrust, set Z axis to safe value
-		body_z.zero();
-		body_z(2) = 1.0f;
+		body_z = Vector3f(0.f, 0.f, 1.f);
 	}
 
 	// vector of desired yaw direction in XY plane, rotated by PI/2
@@ -103,7 +102,7 @@ vehicle_attitude_setpoint_s thrustToAttitude(const Vector3f &thr_sp, const float
 	Eulerf euler = R_sp;
 	att_sp.roll_body = euler(0);
 	att_sp.pitch_body = euler(1);
-	att_sp.thrust = thr_sp.length();
+	att_sp.thrust_body[2] = -thr_sp.length();
 
 	return att_sp;
 }
@@ -140,7 +139,7 @@ Vector2f constrainXY(const Vector2f &v0, const Vector2f &v1, const float &max)
 		// 				   		   v0(0/1/2) -> v0/1/2
 		// 				   		   u1(0/1/2) -> u0/1/2
 		//
-		// ||v + s * u||^2 = (v0+s*u0)^2+(v1+s*u1)^2+(v1+s*u1)^2 = max^2
+		// ||v + s * u||^2 = (v0+s*u0)^2+(v1+s*u1)^2+(v2+s*u2)^2 = max^2
 		// v0^2+2*s*u0*v0+s^2*u0^2 + v1^2+2*s*u1*v1+s^2*u1^2 + v2^2+2*s*u2*v2+s^2*u2^2 = max^2
 		// s^2*(u0^2+u1^2+u2^2) + s*2*(u0*v0+u1*v1+u2*v2) + (v0^2+v1^2+v2^2-max^2) = 0
 		//

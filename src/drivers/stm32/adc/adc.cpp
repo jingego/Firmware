@@ -220,7 +220,7 @@ int board_adc_init()
 		/* do calibration if supported */
 #ifdef ADC_CR2_CAL
 		rCR2 |= ADC_CR2_CAL;
-		usleep(100);
+		px4_usleep(100);
 
 		if (rCR2 & ADC_CR2_CAL) {
 			return -1;
@@ -260,11 +260,11 @@ int board_adc_init()
 
 		/* power-cycle the ADC and turn it on */
 		rCR2 &= ~ADC_CR2_ADON;
-		usleep(10);
+		px4_usleep(10);
 		rCR2 |= ADC_CR2_ADON;
-		usleep(10);
+		px4_usleep(10);
 		rCR2 |= ADC_CR2_ADON;
-		usleep(10);
+		px4_usleep(10);
 
 		/* kick off a sample and wait for it to complete */
 		hrt_abstime now = hrt_absolute_time();
@@ -440,7 +440,7 @@ ADC::update_system_power(hrt_abstime now)
 #endif
 
 	/* The valid signals (HW dependent) are associated with each brick */
-
+#if !defined(BOARD_NUMBER_DIGITAL_BRICKS)
 	bool  valid_chan[BOARD_NUMBER_BRICKS] = BOARD_BRICK_VALID_LIST;
 	system_power.brick_valid = 0;
 
@@ -448,11 +448,21 @@ ADC::update_system_power(hrt_abstime now)
 		system_power.brick_valid |=  valid_chan[b] ? 1 << b : 0;
 	}
 
+#endif
+
 	system_power.servo_valid   = BOARD_ADC_SERVO_VALID;
 
+#ifdef BOARD_ADC_PERIPH_5V_OC
 	// OC pins are active low
 	system_power.periph_5v_oc  = BOARD_ADC_PERIPH_5V_OC;
+#else
+	system_power.periph_5v_oc  = 0;
+#endif
+#ifdef BOARD_ADC_HIPOWER_5V_OC
 	system_power.hipower_5v_oc = BOARD_ADC_HIPOWER_5V_OC;
+#else
+	system_power.hipower_5v_oc  = 0;
+#endif
 
 	/* lazily publish */
 	if (_to_system_power != nullptr) {
@@ -541,7 +551,7 @@ test(void)
 		}
 
 		printf("\n");
-		usleep(500000);
+		px4_usleep(500000);
 	}
 
 	exit(0);

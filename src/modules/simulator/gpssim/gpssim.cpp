@@ -57,7 +57,6 @@
 #include <px4_tasks.h>
 #include <drivers/drv_hrt.h>
 #include <drivers/device/device.h>
-#include <drivers/drv_gps.h>
 #include <uORB/uORB.h>
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/satellite_info.h>
@@ -179,6 +178,7 @@ GPSSIM::GPSSIM(bool fake_gps, bool enable_sat_info,
 	/* we need this potentially before it could be set in task_main */
 	g_dev = this;
 	_report_gps_pos.heading = NAN;
+	_report_gps_pos.heading_offset = NAN;
 
 	/* create satellite info data object if requested */
 	if (enable_sat_info) {
@@ -198,7 +198,7 @@ GPSSIM::~GPSSIM()
 	/* spin waiting for the task to stop */
 	for (unsigned i = 0; (i < 10) && (_task != -1); i++) {
 		/* give it another 100ms */
-		usleep(100000);
+		px4_usleep(100000);
 	}
 
 	/* well, kill it anyway, though this will probably crash */
@@ -268,11 +268,11 @@ GPSSIM::receive(int timeout)
 {
 	Simulator *sim = Simulator::getInstance();
 	simulator::RawGPSData gps;
-	sim->getGPSSample((uint8_t *)&gps, sizeof(gps));
 
-	static int64_t timestamp_last = 0;
+	static uint64_t timestamp_last = 0;
 
-	if (gps.timestamp != timestamp_last) {
+	if (sim->getGPSSample((uint8_t *)&gps, sizeof(gps)) &&
+	    (gps.timestamp != timestamp_last || timestamp_last == 0)) {
 		_report_gps_pos.timestamp = hrt_absolute_time();
 		_report_gps_pos.lat = gps.lat;
 		_report_gps_pos.lon = gps.lon;
@@ -286,6 +286,7 @@ GPSSIM::receive(int timeout)
 		_report_gps_pos.cog_rad = (float)(gps.cog) * 3.1415f / (100.0f * 180.0f);
 		_report_gps_pos.fix_type = gps.fix_type;
 		_report_gps_pos.satellites_used = gps.satellites_visible;
+		_report_gps_pos.s_variance_m_s = 0.25f;
 
 		timestamp_last = gps.timestamp;
 
@@ -301,7 +302,7 @@ GPSSIM::receive(int timeout)
 
 	} else {
 
-		usleep(timeout);
+		px4_usleep(timeout);
 		return 0;
 	}
 }
@@ -371,7 +372,7 @@ GPSSIM::print_info()
 		print_message(_report_gps_pos);
 	}
 
-	usleep(100000);
+	px4_usleep(100000);
 }
 
 void
